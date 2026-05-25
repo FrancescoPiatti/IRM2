@@ -1,0 +1,1825 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Index &mdash; IRM2 — Neural Short-Rate Calibration</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=0bd0538f" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8b008d"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #1f3855" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            IRM2
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#high-level-pipeline">High-level pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#layer-responsibilities">Layer responsibilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#where-to-put-things">Where to put things</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#runtime">Runtime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#building-the-docs">Building the docs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#running-the-tests">Running the tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#repository-layout">Repository layout</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="concepts/dataflow.html">Data flow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts/dataflow.html#step-1-store-construction-once">Step 1 — store construction (once)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/dataflow.html#step-2-snapshot-per-date">Step 2 — snapshot per date</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts/dataflow.html#active-futures-filter">Active-futures filter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts/dataflow.html#bond-metadata">Bond metadata</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/dataflow.html#step-3-encoder-input">Step 3 — encoder input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/dataflow.html#step-4-model-forward">Step 4 — model forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/dataflow.html#step-5-pricing">Step 5 — pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/dataflow.html#step-6-loss">Step 6 — loss</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/types.html">Type contracts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts/types.html#encoderinputs">EncoderInputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/types.html#yieldcurvetarget-shortratetarget">YieldCurveTarget / ShortRateTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/types.html#singlefuturetarget">SingleFutureTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/types.html#batchedfuturestarget">BatchedFuturesTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/types.html#bondfeatures">BondFeatures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/types.html#marketsnapshot">MarketSnapshot</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/pricing.html">Pricing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts/pricing.html#yield-curve-pricing">Yield-curve pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/pricing.html#short-rate-observable">Short-rate observable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/pricing.html#futures-pricing-cheapest-to-deliver-mc">Futures pricing — cheapest-to-deliver MC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/pricing.html#no-look-ahead-alignment">No-look-ahead alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/pricing.html#year-fraction-convention">Year-fraction convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/training.html">Training loop</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts/training.html#window-structure">Window structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts/training.html#per-window-batching">Per-window batching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts/training.html#nsde-solver-backend">NSDE solver backend</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/training.html#loss-composition">Loss composition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/training.html#amp-and-precision-policy">AMP and precision policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/training.html#reproducibility">Reproducibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/training.html#checkpoints">Checkpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/training.html#evaluation">Evaluation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/01_load_market_data.html">Example 1 — Loading and inspecting market data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/01_load_market_data.html#the-simplest-loader-yields-only">1.1 The simplest loader (yields only)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/01_load_market_data.html#inspect-a-single-snapshot">1.2 Inspect a single snapshot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/01_load_market_data.html#enable-futures-and-bond-metadata">1.3 Enable futures and bond metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/01_load_market_data.html#walking-the-calendar">1.4 Walking the calendar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/01_load_market_data.html#encoder-histories">1.5 Encoder histories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/01_load_market_data.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/02_build_and_train_model.html">Example 2 — Building and training a model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/02_build_and_train_model.html#imports-and-config">2.1 Imports and config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/02_build_and_train_model.html#data-encoder-nsde">2.2 Data + encoder + NSDE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/02_build_and_train_model.html#bondnet">2.3 BondNet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/02_build_and_train_model.html#model">2.4 Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/02_build_and_train_model.html#trainer">2.5 Trainer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/02_build_and_train_model.html#outputs">2.6 Outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/02_build_and_train_model.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/03_evaluate_and_inspect.html">Example 3 — Evaluation and inspection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/03_evaluate_and_inspect.html#evaluation">3.1 Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/03_evaluate_and_inspect.html#model-implied-observables-no-loss">3.2 Model-implied observables (no loss)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/03_evaluate_and_inspect.html#loss-trajectories">3.3 Loss trajectories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/03_evaluate_and_inspect.html#loading-a-saved-model-back">3.4 Loading a saved model back</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/03_evaluate_and_inspect.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/04_futures_pricing_walkthrough.html">Example 4 — Futures pricing, end-to-end</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/04_futures_pricing_walkthrough.html#build-the-pieces">4.1 Build the pieces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/04_futures_pricing_walkthrough.html#wire-up-the-model">4.2 Wire up the model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/04_futures_pricing_walkthrough.html#simulate-latent-paths">4.3 Simulate latent paths</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/04_futures_pricing_walkthrough.html#call-the-pricer">4.4 Call the pricer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/04_futures_pricing_walkthrough.html#what-just-happened-shape-by-shape">4.5 What just happened — shape-by-shape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/04_futures_pricing_walkthrough.html#sanity-check-the-ctd-reduction-by-hand">4.6 Sanity check the CTD reduction by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/04_futures_pricing_walkthrough.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/05_gridsearch.html">Example 5 — Optuna grid search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/05_gridsearch.html#a-minimal-grid">5.1 A minimal grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/05_gridsearch.html#what-to-search">5.2 What to search</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/05_gridsearch.html#tier-1-must-search">Tier 1 — must search</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/05_gridsearch.html#tier-2-add-once-tier-1-settles">Tier 2 — add once Tier 1 settles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/05_gridsearch.html#tier-3-set-and-forget">Tier 3 — set-and-forget</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/05_gridsearch.html#do-not-grid">Do <strong>not</strong> grid</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples/05_gridsearch.html#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/configs.html">Configs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.data_path"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.data_path</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.start_date"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.start_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.end_date"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.end_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.max_maturity"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.max_maturity</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.business_days_per_year"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.business_days_per_year</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_yield"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_yield</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_short_rate"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_bonds"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_bonds</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_futures"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_options"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_options</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.device"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.dtype"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_loader.DataLoaderCfg.validate"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg"><code class="docutils literal notranslate"><span class="pre">EncoderCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg.mode"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg.preprocess_mode"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.preprocess_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg.out_norm"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.out_norm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg.net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg.fast_net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.fast_net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg.slow_net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.slow_net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg.combine"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.combine</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_encoder.EncoderCfg.validate"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg"><code class="docutils literal notranslate"><span class="pre">NSDECfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.type"><code class="docutils literal notranslate"><span class="pre">NSDECfg.type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.noise_type"><code class="docutils literal notranslate"><span class="pre">NSDECfg.noise_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.solver"><code class="docutils literal notranslate"><span class="pre">NSDECfg.solver</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.method"><code class="docutils literal notranslate"><span class="pre">NSDECfg.method</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.adjoint"><code class="docutils literal notranslate"><span class="pre">NSDECfg.adjoint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.rtol"><code class="docutils literal notranslate"><span class="pre">NSDECfg.rtol</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.atol"><code class="docutils literal notranslate"><span class="pre">NSDECfg.atol</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.dt"><code class="docutils literal notranslate"><span class="pre">NSDECfg.dt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.drift"><code class="docutils literal notranslate"><span class="pre">NSDECfg.drift</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.diffusion"><code class="docutils literal notranslate"><span class="pre">NSDECfg.diffusion</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.long_term_mean"><code class="docutils literal notranslate"><span class="pre">NSDECfg.long_term_mean</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.mean_reversion"><code class="docutils literal notranslate"><span class="pre">NSDECfg.mean_reversion</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_nsde.NSDECfg.validate"><code class="docutils literal notranslate"><span class="pre">NSDECfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.latent_dim"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.latent_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.bond_feat_dim"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.bond_feat_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.activation"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.activation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.out_activation"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.out_activation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.dropout"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.dropout</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.output_positive"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.output_positive</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.latent_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.latent_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.latent_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.latent_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.bond_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.bond_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.bond_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.bond_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.fusion_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.fusion_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.fusion_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.fusion_n_units</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.trunk_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.trunk_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.trunk_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.trunk_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.film_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.film_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.film_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.film_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.head_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.head_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.head_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.head_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.hidden_dim"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.hidden_dim</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_bondnet.BondNetCfg"><code class="docutils literal notranslate"><span class="pre">BondNetCfg</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.OptimizerCfg"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.OptimizerCfg.name"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.OptimizerCfg.params"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.SchedulerCfg"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.SchedulerCfg.name"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.SchedulerCfg.params"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.LossCfg"><code class="docutils literal notranslate"><span class="pre">LossCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.LossCfg.name"><code class="docutils literal notranslate"><span class="pre">LossCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.LossCfg.params"><code class="docutils literal notranslate"><span class="pre">LossCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.CheckpointCfg"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.CheckpointCfg.mode"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.CheckpointCfg.save_best_only"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.save_best_only</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.CheckpointCfg.every_n_epochs"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.every_n_epochs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.CheckpointCfg.max_to_keep"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.max_to_keep</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.enabled"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.enabled</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.patience"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.patience</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.min_delta"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.min_delta</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.use_ema"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.use_ema</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.ema_alpha"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.ema_alpha</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg"><code class="docutils literal notranslate"><span class="pre">TrainerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.n_paths"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.n_paths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.batch_window"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.batch_window</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.window_step"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.window_step</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.dt"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.dt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_fast"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_fast</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_fast_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_fast_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_slow"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_slow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_slow_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_slow_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.optimizer"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.optimizer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.scheduler"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.scheduler</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.loss"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.use_amp"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.use_amp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.grad_clip_norm"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.grad_clip_norm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.accumulate_windows"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.accumulate_windows</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.compile_nsde"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.compile_nsde</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.seed"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.seed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.deterministic"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.deterministic</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.results_root"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.results_root</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.run_name"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.run_name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.debug"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.debug</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.checkpoint"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.checkpoint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.early_stopping"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.early_stopping</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.skip_nan_loss"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.skip_nan_loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.log_every_n_windows"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.log_every_n_windows</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/configs.html#src.configs.config_trainer.TrainerCfg.validate"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/configs.html#required-key">Required key</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/dataloaders.html">Dataloaders</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar"><code class="docutils literal notranslate"><span class="pre">MarketCalendar</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.dates"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.start_date"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.start_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.end_date"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.end_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.between"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.between()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.last_available_on_or_before"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.last_available_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.next_available_after"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.next_available_after()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.training_windows"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.training_windows()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.data"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.max_maturity"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.max_maturity</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.device"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.dtype"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.from_csv"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.dates"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_curve_on_or_before"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_curve_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_curve"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_next_curve"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_next_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_maturities"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_maturities()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_encoder_history"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_encoder_history()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore"><code class="docutils literal notranslate"><span class="pre">ShortRateStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.data"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.device"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.dtype"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.from_csv"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_rate"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_rate_on_or_before"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_rate_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_encoder_history"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_encoder_history()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore"><code class="docutils literal notranslate"><span class="pre">FuturesStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.quotes_wide"><code class="docutils literal notranslate"><span class="pre">FuturesStore.quotes_wide</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.expirations"><code class="docutils literal notranslate"><span class="pre">FuturesStore.expirations</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.deliverables"><code class="docutils literal notranslate"><span class="pre">FuturesStore.deliverables</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.device"><code class="docutils literal notranslate"><span class="pre">FuturesStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.dtype"><code class="docutils literal notranslate"><span class="pre">FuturesStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.from_csv"><code class="docutils literal notranslate"><span class="pre">FuturesStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.dates"><code class="docutils literal notranslate"><span class="pre">FuturesStore.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.tickers"><code class="docutils literal notranslate"><span class="pre">FuturesStore.tickers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_date_on_or_before"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_date_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_price_on_or_before"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_price_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_prices"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_prices()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_active_tickers"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_active_tickers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_futures_target"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_futures_target()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_batched_futures_target"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_batched_futures_target()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.data"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.business_days_per_year"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.business_days_per_year</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.device"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.dtype"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.from_csv"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.ids"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.get_metadata"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.get_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.get_bond_features"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.get_bond_features()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.cfg"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.cfg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_dates_between"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_dates_between()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_last_available_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_last_available_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_next_available_yield_curve_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_next_available_yield_curve_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_available_yield_curve_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_available_yield_curve_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_batch_windows"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_batch_windows()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_histories"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_histories()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_history"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_history()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_snapshot"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_snapshot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel"><code class="docutils literal notranslate"><span class="pre">ShortRateModel</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.from_dicts"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.from_dicts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.encode"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.encode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.decode"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.decode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.simulate"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.simulate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.sample"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.sample()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.latent_dim"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.latent_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.noise_dim"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.noise_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.encoder_type"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.encoder_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.nsde_type"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.nsde_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.cache_training_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.cache_training_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.model_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.model_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.short_rate_model.ShortRateModel.save_model_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.save_model_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.encoders.Encoder"><code class="docutils literal notranslate"><span class="pre">Encoder</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.encoders.Encoder.forward"><code class="docutils literal notranslate"><span class="pre">Encoder.forward()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.encoders.Encoder.latent_dim"><code class="docutils literal notranslate"><span class="pre">Encoder.latent_dim</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.nsde.BaseNSDE"><code class="docutils literal notranslate"><span class="pre">BaseNSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.nsde.BaseNSDE.f"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.nsde.BaseNSDE.g"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.g()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.nsde.BaseNSDE.forward"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.nsde.Simple_NeuralSDE"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.nsde.Simple_NeuralSDE.f"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.nsde.Simple_NeuralSDE.g"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE.g()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.nsde.OU_NeuralSDE"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.nsde.OU_NeuralSDE.f"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.nsde.OU_NeuralSDE.g"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE.g()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.nsde.create_nsde_from_config"><code class="docutils literal notranslate"><span class="pre">create_nsde_from_config()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.bond_net.SimpleBondNet"><code class="docutils literal notranslate"><span class="pre">SimpleBondNet</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.bond_net.SimpleBondNet.forward"><code class="docutils literal notranslate"><span class="pre">SimpleBondNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.bond_net.FiLMBondNet"><code class="docutils literal notranslate"><span class="pre">FiLMBondNet</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.models.bond_net.FiLMBondNet.forward"><code class="docutils literal notranslate"><span class="pre">FiLMBondNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.bond_net.get_bond_net"><code class="docutils literal notranslate"><span class="pre">get_bond_net()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#src.models.bond_net.BondNet"><code class="docutils literal notranslate"><span class="pre">BondNet</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#module-src.nn.mlp">Backbone networks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.mlp.MLP"><code class="docutils literal notranslate"><span class="pre">MLP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.rnn.RNN"><code class="docutils literal notranslate"><span class="pre">RNN</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/models.html#src.nn.rnn.RNN.forward"><code class="docutils literal notranslate"><span class="pre">RNN.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.lstm.LSTM"><code class="docutils literal notranslate"><span class="pre">LSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/models.html#src.nn.lstm.LSTM.forward"><code class="docutils literal notranslate"><span class="pre">LSTM.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.gru.GRU"><code class="docutils literal notranslate"><span class="pre">GRU</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/models.html#src.nn.gru.GRU.forward"><code class="docutils literal notranslate"><span class="pre">GRU.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.mamba.MambaBlock"><code class="docutils literal notranslate"><span class="pre">MambaBlock</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/models.html#src.nn.mamba.MambaBlock.forward"><code class="docutils literal notranslate"><span class="pre">MambaBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.mamba.MambaEncoder"><code class="docutils literal notranslate"><span class="pre">MambaEncoder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/models.html#src.nn.mamba.MambaEncoder.forward"><code class="docutils literal notranslate"><span class="pre">MambaEncoder.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.affine.AffineNet"><code class="docutils literal notranslate"><span class="pre">AffineNet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/models.html#src.nn.affine.AffineNet.forward"><code class="docutils literal notranslate"><span class="pre">AffineNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.constant.ConstantNet"><code class="docutils literal notranslate"><span class="pre">ConstantNet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/models.html#src.nn.constant.ConstantNet.forward"><code class="docutils literal notranslate"><span class="pre">ConstantNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/models.html#src.nn.generator.create_network_from_config"><code class="docutils literal notranslate"><span class="pre">create_network_from_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/finance.html">Pricing (<code class="docutils literal notranslate"><span class="pre">src.finance</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/finance.html#src.finance.pricer_v2.to_year_fraction"><code class="docutils literal notranslate"><span class="pre">to_year_fraction()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/finance.html#src.finance.pricer_v2.Pricer"><code class="docutils literal notranslate"><span class="pre">Pricer</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/finance.html#src.finance.pricer_v2.Pricer.price_zcb"><code class="docutils literal notranslate"><span class="pre">Pricer.price_zcb()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/finance.html#src.finance.pricer_v2.Pricer.price_yield_curve"><code class="docutils literal notranslate"><span class="pre">Pricer.price_yield_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/finance.html#src.finance.pricer_v2.Pricer.price_short_rate"><code class="docutils literal notranslate"><span class="pre">Pricer.price_short_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/finance.html#src.finance.pricer_v2.Pricer.price_futures"><code class="docutils literal notranslate"><span class="pre">Pricer.price_futures()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/finance.html#src.finance.pricer_v2.Pricer.price_snapshot"><code class="docutils literal notranslate"><span class="pre">Pricer.price_snapshot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/training.html">Training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer"><code class="docutils literal notranslate"><span class="pre">Trainer</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.get_latent_representation_from_date"><code class="docutils literal notranslate"><span class="pre">Trainer.get_latent_representation_from_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.get_realisations_from_date"><code class="docutils literal notranslate"><span class="pre">Trainer.get_realisations_from_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.train"><code class="docutils literal notranslate"><span class="pre">Trainer.train()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.evaluate"><code class="docutils literal notranslate"><span class="pre">Trainer.evaluate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.evaluate_training_set"><code class="docutils literal notranslate"><span class="pre">Trainer.evaluate_training_set()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.compute_prices"><code class="docutils literal notranslate"><span class="pre">Trainer.compute_prices()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.record_training_info"><code class="docutils literal notranslate"><span class="pre">Trainer.record_training_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.record_finetune_info"><code class="docutils literal notranslate"><span class="pre">Trainer.record_finetune_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.trainer.Trainer.save_training_artifacts"><code class="docutils literal notranslate"><span class="pre">Trainer.save_training_artifacts()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/training.html#src.training.train_utils.WarmupCosineScheduler"><code class="docutils literal notranslate"><span class="pre">WarmupCosineScheduler</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.train_utils.WarmupCosineScheduler.get_lr"><code class="docutils literal notranslate"><span class="pre">WarmupCosineScheduler.get_lr()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/training.html#src.training.train_utils.build_optimizer"><code class="docutils literal notranslate"><span class="pre">build_optimizer()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/training.html#src.training.train_utils.build_loss"><code class="docutils literal notranslate"><span class="pre">build_loss()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/training.html#src.training.train_utils.build_scheduler"><code class="docutils literal notranslate"><span class="pre">build_scheduler()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/training.html#src.training.loss.YieldCurveLoss"><code class="docutils literal notranslate"><span class="pre">YieldCurveLoss</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.loss.YieldCurveLoss.forward"><code class="docutils literal notranslate"><span class="pre">YieldCurveLoss.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/training.html#src.training.gridsearch.OptunaGridSearch"><code class="docutils literal notranslate"><span class="pre">OptunaGridSearch</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/training.html#src.training.gridsearch.OptunaGridSearch.run"><code class="docutils literal notranslate"><span class="pre">OptunaGridSearch.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/types.html">Types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.data_types.EncoderInputs"><code class="docutils literal notranslate"><span class="pre">EncoderInputs</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.EncoderInputs.curve_history"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.curve_history</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.EncoderInputs.short_rate"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.EncoderInputs.dates"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.dates</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.data_types.BondFeatures"><code class="docutils literal notranslate"><span class="pre">BondFeatures</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BondFeatures.ids"><code class="docutils literal notranslate"><span class="pre">BondFeatures.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BondFeatures.features"><code class="docutils literal notranslate"><span class="pre">BondFeatures.features</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BondFeatures.feature_names"><code class="docutils literal notranslate"><span class="pre">BondFeatures.feature_names</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BondFeatures.asof_date"><code class="docutils literal notranslate"><span class="pre">BondFeatures.asof_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BondFeatures.metadata"><code class="docutils literal notranslate"><span class="pre">BondFeatures.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.data_types.YieldCurveTarget"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.YieldCurveTarget.date"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.YieldCurveTarget.maturities"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.maturities</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.YieldCurveTarget.yields"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.yields</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.data_types.ShortRateTarget"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.ShortRateTarget.date"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.ShortRateTarget.rate"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget.rate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.data_types.BondTarget"><code class="docutils literal notranslate"><span class="pre">BondTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BondTarget.ids"><code class="docutils literal notranslate"><span class="pre">BondTarget.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BondTarget.prices"><code class="docutils literal notranslate"><span class="pre">BondTarget.prices</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BondTarget.metadata"><code class="docutils literal notranslate"><span class="pre">BondTarget.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget.id"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget.date"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget.price"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.price</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget.delivery_date"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.delivery_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget.deliverable_ids"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.deliverable_ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget.conversion_factors"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.conversion_factors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget.metadata"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.SingleFutureTarget.basket_size"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.basket_size</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.ids"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.prices"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.prices</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.asof_date"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.asof_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.delivery_dates"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.delivery_dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.basket_lengths"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.basket_lengths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.conversion_factors_flat"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.conversion_factors_flat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.deliverable_ids_flat"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.deliverable_ids_flat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.metadata"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.n_futures"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.n_futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.total_deliverables"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.total_deliverables</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.split_conversion_factors"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.split_conversion_factors()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.BatchedFuturesTarget.split_deliverable_ids"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.split_deliverable_ids()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.data_types.MarketSnapshot"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.MarketSnapshot.date"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.MarketSnapshot.yield_curve"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.yield_curve</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.MarketSnapshot.short_rate"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.MarketSnapshot.bonds"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.bonds</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.MarketSnapshot.bonds_metadata"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.bonds_metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.MarketSnapshot.futures"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.data_types.MarketSnapshot.meta"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.meta</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.types_utils.normalize_date"><code class="docutils literal notranslate"><span class="pre">normalize_date()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.types_utils.merge_single_future_targets"><code class="docutils literal notranslate"><span class="pre">merge_single_future_targets()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.eval_results_types.EvalResults"><code class="docutils literal notranslate"><span class="pre">EvalResults</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.eval_results_types.EvalResults.date"><code class="docutils literal notranslate"><span class="pre">EvalResults.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.eval_results_types.EvalResults.n_paths"><code class="docutils literal notranslate"><span class="pre">EvalResults.n_paths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.eval_results_types.EvalResults.total_loss"><code class="docutils literal notranslate"><span class="pre">EvalResults.total_loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.eval_results_types.EvalResults.components"><code class="docutils literal notranslate"><span class="pre">EvalResults.components</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.eval_results_types.EvalResults.meta"><code class="docutils literal notranslate"><span class="pre">EvalResults.meta</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.eval_results_types.eval_results_to_frame"><code class="docutils literal notranslate"><span class="pre">eval_results_to_frame()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.TrialResult"><code class="docutils literal notranslate"><span class="pre">TrialResult</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.TrialResult.number"><code class="docutils literal notranslate"><span class="pre">TrialResult.number</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.TrialResult.value"><code class="docutils literal notranslate"><span class="pre">TrialResult.value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.TrialResult.params"><code class="docutils literal notranslate"><span class="pre">TrialResult.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.GridSearchResults"><code class="docutils literal notranslate"><span class="pre">GridSearchResults</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.GridSearchResults.best_value"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.best_value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.GridSearchResults.best_params"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.best_params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.GridSearchResults.trials"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.trials</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/types.html#src.types.gridsearch_types.GridSearchResults.to_json"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.to_json()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #1f3855" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">IRM2</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Index</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#Q"><strong>Q</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
+ | <a href="#Y"><strong>Y</strong></a>
+ 
+</div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.accumulate_windows">accumulate_windows (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.activation">activation (src.configs.config_bondnet.BaseBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.adjoint">adjoint (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.nn.affine.AffineNet">AffineNet (class in src.nn.affine)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.asof_date">asof_date (src.types.data_types.BatchedFuturesTarget attribute)</a>
+
+      <ul>
+        <li><a href="api/types.html#src.types.data_types.BondFeatures.asof_date">(src.types.data_types.BondFeatures attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.atol">atol (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg">BaseBondNetCfg (class in src.configs.config_bondnet)</a>
+</li>
+      <li><a href="api/models.html#src.models.nsde.BaseNSDE">BaseNSDE (class in src.models.nsde)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.basket_lengths">basket_lengths (src.types.data_types.BatchedFuturesTarget attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.SingleFutureTarget.basket_size">basket_size (src.types.data_types.SingleFutureTarget property)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.batch_window">batch_window (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget">BatchedFuturesTarget (class in src.types.data_types)</a>
+</li>
+      <li><a href="api/types.html#src.types.gridsearch_types.GridSearchResults.best_params">best_params (src.types.gridsearch_types.GridSearchResults attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.gridsearch_types.GridSearchResults.best_value">best_value (src.types.gridsearch_types.GridSearchResults attribute)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.between">between() (src.dataloaders.calendar.MarketCalendar method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.bond_feat_dim">bond_feat_dim (src.configs.config_bondnet.BaseBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.bond_n_layers">bond_n_layers (src.configs.config_bondnet.SimpleBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.bond_n_units">bond_n_units (src.configs.config_bondnet.SimpleBondNetCfg attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/types.html#src.types.data_types.BondFeatures">BondFeatures (class in src.types.data_types)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore">BondMetadataStore (class in src.dataloaders.bond_metadata_store)</a>
+</li>
+      <li><a href="api/models.html#src.models.bond_net.BondNet">BondNet (in module src.models.bond_net)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.BondNetCfg">BondNetCfg (in module src.configs.config_bondnet)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.MarketSnapshot.bonds">bonds (src.types.data_types.MarketSnapshot attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.MarketSnapshot.bonds_metadata">bonds_metadata (src.types.data_types.MarketSnapshot attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BondTarget">BondTarget (class in src.types.data_types)</a>
+</li>
+      <li><a href="api/training.html#src.training.train_utils.build_loss">build_loss() (in module src.training.train_utils)</a>
+</li>
+      <li><a href="api/training.html#src.training.train_utils.build_optimizer">build_optimizer() (in module src.training.train_utils)</a>
+</li>
+      <li><a href="api/training.html#src.training.train_utils.build_scheduler">build_scheduler() (in module src.training.train_utils)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.business_days_per_year">business_days_per_year (src.configs.config_loader.DataLoaderCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.business_days_per_year">(src.dataloaders.bond_metadata_store.BondMetadataStore attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.cache_training_info">cache_training_info() (src.models.short_rate_model.ShortRateModel method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.cfg">cfg (src.dataloaders.market_loader.MarketDataLoader attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.checkpoint">checkpoint (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.CheckpointCfg">CheckpointCfg (class in src.configs.config_trainer)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg.combine">combine (src.configs.config_encoder.EncoderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.compile_nsde">compile_nsde (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.eval_results_types.EvalResults.components">components (src.types.eval_results_types.EvalResults attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/training.html#src.training.trainer.Trainer.compute_prices">compute_prices() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/models.html#src.nn.constant.ConstantNet">ConstantNet (class in src.nn.constant)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.SingleFutureTarget.conversion_factors">conversion_factors (src.types.data_types.SingleFutureTarget attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.conversion_factors_flat">conversion_factors_flat (src.types.data_types.BatchedFuturesTarget attribute)</a>
+</li>
+      <li><a href="api/models.html#src.nn.generator.create_network_from_config">create_network_from_config() (in module src.nn.generator)</a>
+</li>
+      <li><a href="api/models.html#src.models.nsde.create_nsde_from_config">create_nsde_from_config() (in module src.models.nsde)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.EncoderInputs.curve_history">curve_history (src.types.data_types.EncoderInputs attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.data">data (src.dataloaders.bond_metadata_store.BondMetadataStore attribute)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.data">(src.dataloaders.short_rate_store.ShortRateStore attribute)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.data">(src.dataloaders.yield_store.YieldCurveStore attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.data_path">data_path (src.configs.config_loader.DataLoaderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg">DataLoaderCfg (class in src.configs.config_loader)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.MarketSnapshot.date">date (src.types.data_types.MarketSnapshot attribute)</a>
+
+      <ul>
+        <li><a href="api/types.html#src.types.data_types.ShortRateTarget.date">(src.types.data_types.ShortRateTarget attribute)</a>
+</li>
+        <li><a href="api/types.html#src.types.data_types.SingleFutureTarget.date">(src.types.data_types.SingleFutureTarget attribute)</a>
+</li>
+        <li><a href="api/types.html#src.types.data_types.YieldCurveTarget.date">(src.types.data_types.YieldCurveTarget attribute)</a>
+</li>
+        <li><a href="api/types.html#src.types.eval_results_types.EvalResults.date">(src.types.eval_results_types.EvalResults attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.dates">dates (src.dataloaders.calendar.MarketCalendar attribute)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.dates">(src.dataloaders.futures_store.FuturesStore property)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.dates">(src.dataloaders.yield_store.YieldCurveStore property)</a>
+</li>
+        <li><a href="api/types.html#src.types.data_types.EncoderInputs.dates">(src.types.data_types.EncoderInputs attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.debug">debug (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.decode">decode() (src.models.short_rate_model.ShortRateModel method)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.SingleFutureTarget.deliverable_ids">deliverable_ids (src.types.data_types.SingleFutureTarget attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.deliverable_ids_flat">deliverable_ids_flat (src.types.data_types.BatchedFuturesTarget attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.deliverables">deliverables (src.dataloaders.futures_store.FuturesStore attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.SingleFutureTarget.delivery_date">delivery_date (src.types.data_types.SingleFutureTarget attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.delivery_dates">delivery_dates (src.types.data_types.BatchedFuturesTarget attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.deterministic">deterministic (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.device">device (src.configs.config_loader.DataLoaderCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.device">(src.dataloaders.bond_metadata_store.BondMetadataStore attribute)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.device">(src.dataloaders.futures_store.FuturesStore attribute)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.device">(src.dataloaders.short_rate_store.ShortRateStore attribute)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.device">(src.dataloaders.yield_store.YieldCurveStore attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.diffusion">diffusion (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.drift">drift (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.dropout">dropout (src.configs.config_bondnet.BaseBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.dt">dt (src.configs.config_nsde.NSDECfg attribute)</a>
+
+      <ul>
+        <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.dt">(src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.dtype">dtype (src.configs.config_loader.DataLoaderCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.dtype">(src.dataloaders.bond_metadata_store.BondMetadataStore attribute)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.dtype">(src.dataloaders.futures_store.FuturesStore attribute)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.dtype">(src.dataloaders.short_rate_store.ShortRateStore attribute)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.dtype">(src.dataloaders.yield_store.YieldCurveStore attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.early_stopping">early_stopping (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg">EarlyStoppingCfg (class in src.configs.config_trainer)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.ema_alpha">ema_alpha (src.configs.config_trainer.EarlyStoppingCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_bonds">enable_bonds (src.configs.config_loader.DataLoaderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_futures">enable_futures (src.configs.config_loader.DataLoaderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_options">enable_options (src.configs.config_loader.DataLoaderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_short_rate">enable_short_rate (src.configs.config_loader.DataLoaderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_yield">enable_yield (src.configs.config_loader.DataLoaderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.enabled">enabled (src.configs.config_trainer.EarlyStoppingCfg attribute)</a>
+</li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.encode">encode() (src.models.short_rate_model.ShortRateModel method)</a>
+</li>
+      <li><a href="api/models.html#src.models.encoders.Encoder">Encoder (class in src.models.encoders)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.encoder_type">encoder_type (src.models.short_rate_model.ShortRateModel property)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg">EncoderCfg (class in src.configs.config_encoder)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.EncoderInputs">EncoderInputs (class in src.types.data_types)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.end_date">end_date (src.configs.config_loader.DataLoaderCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.end_date">(src.dataloaders.calendar.MarketCalendar property)</a>
+</li>
+      </ul></li>
+      <li><a href="api/types.html#src.types.eval_results_types.eval_results_to_frame">eval_results_to_frame() (in module src.types.eval_results_types)</a>
+</li>
+      <li><a href="api/types.html#src.types.eval_results_types.EvalResults">EvalResults (class in src.types.eval_results_types)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer.evaluate">evaluate() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer.evaluate_training_set">evaluate_training_set() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.CheckpointCfg.every_n_epochs">every_n_epochs (src.configs.config_trainer.CheckpointCfg attribute)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.expirations">expirations (src.dataloaders.futures_store.FuturesStore attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.models.nsde.BaseNSDE.f">f() (src.models.nsde.BaseNSDE method)</a>
+
+      <ul>
+        <li><a href="api/models.html#src.models.nsde.OU_NeuralSDE.f">(src.models.nsde.OU_NeuralSDE method)</a>
+</li>
+        <li><a href="api/models.html#src.models.nsde.Simple_NeuralSDE.f">(src.models.nsde.Simple_NeuralSDE method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg.fast_net">fast_net (src.configs.config_encoder.EncoderCfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BondFeatures.feature_names">feature_names (src.types.data_types.BondFeatures attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BondFeatures.features">features (src.types.data_types.BondFeatures attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.film_n_layers">film_n_layers (src.configs.config_bondnet.FiLMBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.film_n_units">film_n_units (src.configs.config_bondnet.FiLMBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/models.html#src.models.bond_net.FiLMBondNet">FiLMBondNet (class in src.models.bond_net)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg">FiLMBondNetCfg (class in src.configs.config_bondnet)</a>
+</li>
+      <li><a href="api/models.html#src.models.bond_net.FiLMBondNet.forward">forward() (src.models.bond_net.FiLMBondNet method)</a>
+
+      <ul>
+        <li><a href="api/models.html#src.models.bond_net.SimpleBondNet.forward">(src.models.bond_net.SimpleBondNet method)</a>
+</li>
+        <li><a href="api/models.html#src.models.encoders.Encoder.forward">(src.models.encoders.Encoder method)</a>
+</li>
+        <li><a href="api/models.html#src.models.nsde.BaseNSDE.forward">(src.models.nsde.BaseNSDE method)</a>
+</li>
+        <li><a href="api/models.html#src.nn.affine.AffineNet.forward">(src.nn.affine.AffineNet method)</a>
+</li>
+        <li><a href="api/models.html#src.nn.constant.ConstantNet.forward">(src.nn.constant.ConstantNet method)</a>
+</li>
+        <li><a href="api/models.html#src.nn.gru.GRU.forward">(src.nn.gru.GRU method)</a>
+</li>
+        <li><a href="api/models.html#src.nn.lstm.LSTM.forward">(src.nn.lstm.LSTM method)</a>
+</li>
+        <li><a href="api/models.html#src.nn.mamba.MambaBlock.forward">(src.nn.mamba.MambaBlock method)</a>
+</li>
+        <li><a href="api/models.html#src.nn.mamba.MambaEncoder.forward">(src.nn.mamba.MambaEncoder method)</a>
+</li>
+        <li><a href="api/models.html#src.nn.rnn.RNN.forward">(src.nn.rnn.RNN method)</a>
+</li>
+        <li><a href="api/training.html#src.training.loss.YieldCurveLoss.forward">(src.training.loss.YieldCurveLoss method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.from_csv">from_csv() (src.dataloaders.bond_metadata_store.BondMetadataStore class method)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.from_csv">(src.dataloaders.futures_store.FuturesStore class method)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.from_csv">(src.dataloaders.short_rate_store.ShortRateStore class method)</a>
+</li>
+        <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.from_csv">(src.dataloaders.yield_store.YieldCurveStore class method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.from_dicts">from_dicts() (src.models.short_rate_model.ShortRateModel class method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.fusion_n_layers">fusion_n_layers (src.configs.config_bondnet.SimpleBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.fusion_n_units">fusion_n_units (src.configs.config_bondnet.SimpleBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.MarketSnapshot.futures">futures (src.types.data_types.MarketSnapshot attribute)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore">FuturesStore (class in src.dataloaders.futures_store)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.models.nsde.BaseNSDE.g">g() (src.models.nsde.BaseNSDE method)</a>
+
+      <ul>
+        <li><a href="api/models.html#src.models.nsde.OU_NeuralSDE.g">(src.models.nsde.OU_NeuralSDE method)</a>
+</li>
+        <li><a href="api/models.html#src.models.nsde.Simple_NeuralSDE.g">(src.models.nsde.Simple_NeuralSDE method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_active_tickers">get_active_tickers() (src.dataloaders.futures_store.FuturesStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_available_yield_curve_date">get_available_yield_curve_date() (src.dataloaders.market_loader.MarketDataLoader method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_batch_windows">get_batch_windows() (src.dataloaders.market_loader.MarketDataLoader method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_batched_futures_target">get_batched_futures_target() (src.dataloaders.futures_store.FuturesStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.get_bond_features">get_bond_features() (src.dataloaders.bond_metadata_store.BondMetadataStore method)</a>
+</li>
+      <li><a href="api/models.html#src.models.bond_net.get_bond_net">get_bond_net() (in module src.models.bond_net)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_curve">get_curve() (src.dataloaders.yield_store.YieldCurveStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_curve_on_or_before">get_curve_on_or_before() (src.dataloaders.yield_store.YieldCurveStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_date_on_or_before">get_date_on_or_before() (src.dataloaders.futures_store.FuturesStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_dates_between">get_dates_between() (src.dataloaders.market_loader.MarketDataLoader method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_encoder_history">get_encoder_history() (src.dataloaders.short_rate_store.ShortRateStore method)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_encoder_history">(src.dataloaders.yield_store.YieldCurveStore method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_futures_target">get_futures_target() (src.dataloaders.futures_store.FuturesStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_histories">get_histories() (src.dataloaders.market_loader.MarketDataLoader method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_history">get_history() (src.dataloaders.market_loader.MarketDataLoader method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_last_available_date">get_last_available_date() (src.dataloaders.market_loader.MarketDataLoader method)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer.get_latent_representation_from_date">get_latent_representation_from_date() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/training.html#src.training.train_utils.WarmupCosineScheduler.get_lr">get_lr() (src.training.train_utils.WarmupCosineScheduler method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_maturities">get_maturities() (src.dataloaders.yield_store.YieldCurveStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.get_metadata">get_metadata() (src.dataloaders.bond_metadata_store.BondMetadataStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_next_available_yield_curve_date">get_next_available_yield_curve_date() (src.dataloaders.market_loader.MarketDataLoader method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_next_curve">get_next_curve() (src.dataloaders.yield_store.YieldCurveStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_price_on_or_before">get_price_on_or_before() (src.dataloaders.futures_store.FuturesStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_prices">get_prices() (src.dataloaders.futures_store.FuturesStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_rate">get_rate() (src.dataloaders.short_rate_store.ShortRateStore method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_rate_on_or_before">get_rate_on_or_before() (src.dataloaders.short_rate_store.ShortRateStore method)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer.get_realisations_from_date">get_realisations_from_date() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_snapshot">get_snapshot() (src.dataloaders.market_loader.MarketDataLoader method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.grad_clip_norm">grad_clip_norm (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.gridsearch_types.GridSearchResults">GridSearchResults (class in src.types.gridsearch_types)</a>
+</li>
+      <li><a href="api/models.html#src.nn.gru.GRU">GRU (class in src.nn.gru)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.head_n_layers">head_n_layers (src.configs.config_bondnet.FiLMBondNetCfg attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.head_n_units">head_n_units (src.configs.config_bondnet.FiLMBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.hidden_dim">hidden_dim (src.configs.config_bondnet.FiLMBondNetCfg attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/types.html#src.types.data_types.SingleFutureTarget.id">id (src.types.data_types.SingleFutureTarget attribute)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.ids">ids (src.dataloaders.bond_metadata_store.BondMetadataStore property)</a>
+
+      <ul>
+        <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.ids">(src.types.data_types.BatchedFuturesTarget attribute)</a>
+</li>
+        <li><a href="api/types.html#src.types.data_types.BondFeatures.ids">(src.types.data_types.BondFeatures attribute)</a>
+</li>
+        <li><a href="api/types.html#src.types.data_types.BondTarget.ids">(src.types.data_types.BondTarget attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.last_available_on_or_before">last_available_on_or_before() (src.dataloaders.calendar.MarketCalendar method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.latent_dim">latent_dim (src.configs.config_bondnet.BaseBondNetCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/models.html#src.models.encoders.Encoder.latent_dim">(src.models.encoders.Encoder property)</a>
+</li>
+        <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.latent_dim">(src.models.short_rate_model.ShortRateModel property)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.latent_n_layers">latent_n_layers (src.configs.config_bondnet.SimpleBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.latent_n_units">latent_n_units (src.configs.config_bondnet.SimpleBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.log_every_n_windows">log_every_n_windows (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.long_term_mean">long_term_mean (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback">lookback (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_fast">lookback_fast (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_fast_freq">lookback_fast_freq (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_freq">lookback_freq (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_slow">lookback_slow (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_slow_freq">lookback_slow_freq (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.loss">loss (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.LossCfg">LossCfg (class in src.configs.config_trainer)</a>
+</li>
+      <li><a href="api/models.html#src.nn.lstm.LSTM">LSTM (class in src.nn.lstm)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.nn.mamba.MambaBlock">MambaBlock (class in src.nn.mamba)</a>
+</li>
+      <li><a href="api/models.html#src.nn.mamba.MambaEncoder">MambaEncoder (class in src.nn.mamba)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar">MarketCalendar (class in src.dataloaders.calendar)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader">MarketDataLoader (class in src.dataloaders.market_loader)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.MarketSnapshot">MarketSnapshot (class in src.types.data_types)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.YieldCurveTarget.maturities">maturities (src.types.data_types.YieldCurveTarget attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.max_maturity">max_maturity (src.configs.config_loader.DataLoaderCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.max_maturity">(src.dataloaders.yield_store.YieldCurveStore attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_trainer.CheckpointCfg.max_to_keep">max_to_keep (src.configs.config_trainer.CheckpointCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.mean_reversion">mean_reversion (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.types_utils.merge_single_future_targets">merge_single_future_targets() (in module src.types.types_utils)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.MarketSnapshot.meta">meta (src.types.data_types.MarketSnapshot attribute)</a>
+
+      <ul>
+        <li><a href="api/types.html#src.types.eval_results_types.EvalResults.meta">(src.types.eval_results_types.EvalResults attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.metadata">metadata (src.types.data_types.BatchedFuturesTarget attribute)</a>
+
+      <ul>
+        <li><a href="api/types.html#src.types.data_types.BondFeatures.metadata">(src.types.data_types.BondFeatures attribute)</a>
+</li>
+        <li><a href="api/types.html#src.types.data_types.BondTarget.metadata">(src.types.data_types.BondTarget attribute)</a>
+</li>
+        <li><a href="api/types.html#src.types.data_types.SingleFutureTarget.metadata">(src.types.data_types.SingleFutureTarget attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.method">method (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.min_delta">min_delta (src.configs.config_trainer.EarlyStoppingCfg attribute)</a>
+</li>
+      <li><a href="api/models.html#src.nn.mlp.MLP">MLP (class in src.nn.mlp)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg.mode">mode (src.configs.config_encoder.EncoderCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/configs.html#src.configs.config_trainer.CheckpointCfg.mode">(src.configs.config_trainer.CheckpointCfg attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.model_info">model_info (src.models.short_rate_model.ShortRateModel property)</a>
+</li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="api/configs.html#module-src.configs.config_bondnet">src.configs.config_bondnet</a>
+</li>
+        <li><a href="api/configs.html#module-src.configs.config_encoder">src.configs.config_encoder</a>
+</li>
+        <li><a href="api/configs.html#module-src.configs.config_loader">src.configs.config_loader</a>
+</li>
+        <li><a href="api/configs.html#module-src.configs.config_nn">src.configs.config_nn</a>
+</li>
+        <li><a href="api/configs.html#module-src.configs.config_nsde">src.configs.config_nsde</a>
+</li>
+        <li><a href="api/configs.html#module-src.configs.config_trainer">src.configs.config_trainer</a>
+</li>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.bond_metadata_store">src.dataloaders.bond_metadata_store</a>
+</li>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.calendar">src.dataloaders.calendar</a>
+</li>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.futures_store">src.dataloaders.futures_store</a>
+</li>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.market_loader">src.dataloaders.market_loader</a>
+</li>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.short_rate_store">src.dataloaders.short_rate_store</a>
+</li>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.yield_store">src.dataloaders.yield_store</a>
+</li>
+        <li><a href="api/finance.html#module-src.finance.pricer_v2">src.finance.pricer_v2</a>
+</li>
+        <li><a href="api/models.html#module-src.models.bond_net">src.models.bond_net</a>
+</li>
+        <li><a href="api/models.html#module-src.models.encoders">src.models.encoders</a>
+</li>
+        <li><a href="api/models.html#module-src.models.nsde">src.models.nsde</a>
+</li>
+        <li><a href="api/models.html#module-src.models.short_rate_model">src.models.short_rate_model</a>
+</li>
+        <li><a href="api/models.html#module-src.nn.affine">src.nn.affine</a>
+</li>
+        <li><a href="api/models.html#module-src.nn.constant">src.nn.constant</a>
+</li>
+        <li><a href="api/models.html#module-src.nn.generator">src.nn.generator</a>
+</li>
+        <li><a href="api/models.html#module-src.nn.gru">src.nn.gru</a>
+</li>
+        <li><a href="api/models.html#module-src.nn.lstm">src.nn.lstm</a>
+</li>
+        <li><a href="api/models.html#module-src.nn.mamba">src.nn.mamba</a>
+</li>
+        <li><a href="api/models.html#module-src.nn.mlp">src.nn.mlp</a>
+</li>
+        <li><a href="api/models.html#module-src.nn.rnn">src.nn.rnn</a>
+</li>
+        <li><a href="api/training.html#module-src.training.gridsearch">src.training.gridsearch</a>
+</li>
+        <li><a href="api/training.html#module-src.training.loss">src.training.loss</a>
+</li>
+        <li><a href="api/training.html#module-src.training.train_utils">src.training.train_utils</a>
+</li>
+        <li><a href="api/training.html#module-src.training.trainer">src.training.trainer</a>
+</li>
+        <li><a href="api/types.html#module-src.types.data_types">src.types.data_types</a>
+</li>
+        <li><a href="api/types.html#module-src.types.eval_results_types">src.types.eval_results_types</a>
+</li>
+        <li><a href="api/types.html#module-src.types.gridsearch_types">src.types.gridsearch_types</a>
+</li>
+        <li><a href="api/types.html#module-src.types.types_utils">src.types.types_utils</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.n_futures">n_futures (src.types.data_types.BatchedFuturesTarget property)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.n_paths">n_paths (src.configs.config_trainer.TrainerCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/types.html#src.types.eval_results_types.EvalResults.n_paths">(src.types.eval_results_types.EvalResults attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_trainer.LossCfg.name">name (src.configs.config_trainer.LossCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/configs.html#src.configs.config_trainer.OptimizerCfg.name">(src.configs.config_trainer.OptimizerCfg attribute)</a>
+</li>
+        <li><a href="api/configs.html#src.configs.config_trainer.SchedulerCfg.name">(src.configs.config_trainer.SchedulerCfg attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg.net">net (src.configs.config_encoder.EncoderCfg attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.next_available_after">next_available_after() (src.dataloaders.calendar.MarketCalendar method)</a>
+</li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.noise_dim">noise_dim (src.models.short_rate_model.ShortRateModel property)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.noise_type">noise_type (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.types_utils.normalize_date">normalize_date() (in module src.types.types_utils)</a>
+</li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.nsde_type">nsde_type (src.models.short_rate_model.ShortRateModel property)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg">NSDECfg (class in src.configs.config_nsde)</a>
+</li>
+      <li><a href="api/types.html#src.types.gridsearch_types.TrialResult.number">number (src.types.gridsearch_types.TrialResult attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.optimizer">optimizer (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.OptimizerCfg">OptimizerCfg (class in src.configs.config_trainer)</a>
+</li>
+      <li><a href="api/training.html#src.training.gridsearch.OptunaGridSearch">OptunaGridSearch (class in src.training.gridsearch)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.models.nsde.OU_NeuralSDE">OU_NeuralSDE (class in src.models.nsde)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.out_activation">out_activation (src.configs.config_bondnet.BaseBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg.out_norm">out_norm (src.configs.config_encoder.EncoderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.output_positive">output_positive (src.configs.config_bondnet.BaseBondNetCfg attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.LossCfg.params">params (src.configs.config_trainer.LossCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/configs.html#src.configs.config_trainer.OptimizerCfg.params">(src.configs.config_trainer.OptimizerCfg attribute)</a>
+</li>
+        <li><a href="api/configs.html#src.configs.config_trainer.SchedulerCfg.params">(src.configs.config_trainer.SchedulerCfg attribute)</a>
+</li>
+        <li><a href="api/types.html#src.types.gridsearch_types.TrialResult.params">(src.types.gridsearch_types.TrialResult attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.patience">patience (src.configs.config_trainer.EarlyStoppingCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg.preprocess_mode">preprocess_mode (src.configs.config_encoder.EncoderCfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.SingleFutureTarget.price">price (src.types.data_types.SingleFutureTarget attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/finance.html#src.finance.pricer_v2.Pricer.price_futures">price_futures() (src.finance.pricer_v2.Pricer method)</a>
+</li>
+      <li><a href="api/finance.html#src.finance.pricer_v2.Pricer.price_short_rate">price_short_rate() (src.finance.pricer_v2.Pricer method)</a>
+</li>
+      <li><a href="api/finance.html#src.finance.pricer_v2.Pricer.price_snapshot">price_snapshot() (src.finance.pricer_v2.Pricer method)</a>
+</li>
+      <li><a href="api/finance.html#src.finance.pricer_v2.Pricer.price_yield_curve">price_yield_curve() (src.finance.pricer_v2.Pricer method)</a>
+</li>
+      <li><a href="api/finance.html#src.finance.pricer_v2.Pricer.price_zcb">price_zcb() (src.finance.pricer_v2.Pricer method)</a>
+</li>
+      <li><a href="api/finance.html#src.finance.pricer_v2.Pricer">Pricer (class in src.finance.pricer_v2)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.prices">prices (src.types.data_types.BatchedFuturesTarget attribute)</a>
+
+      <ul>
+        <li><a href="api/types.html#src.types.data_types.BondTarget.prices">(src.types.data_types.BondTarget attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Q">Q</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.quotes_wide">quotes_wide (src.dataloaders.futures_store.FuturesStore attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/types.html#src.types.data_types.ShortRateTarget.rate">rate (src.types.data_types.ShortRateTarget attribute)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer.record_finetune_info">record_finetune_info() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer.record_training_info">record_training_info() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.results_root">results_root (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.nn.rnn.RNN">RNN (class in src.nn.rnn)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.rtol">rtol (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+      <li><a href="api/training.html#src.training.gridsearch.OptunaGridSearch.run">run() (src.training.gridsearch.OptunaGridSearch method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.run_name">run_name (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.sample">sample() (src.models.short_rate_model.ShortRateModel method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.CheckpointCfg.save_best_only">save_best_only (src.configs.config_trainer.CheckpointCfg attribute)</a>
+</li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.save_model_info">save_model_info() (src.models.short_rate_model.ShortRateModel method)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer.save_training_artifacts">save_training_artifacts() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.scheduler">scheduler (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.SchedulerCfg">SchedulerCfg (class in src.configs.config_trainer)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.seed">seed (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.EncoderInputs.short_rate">short_rate (src.types.data_types.EncoderInputs attribute)</a>
+
+      <ul>
+        <li><a href="api/types.html#src.types.data_types.MarketSnapshot.short_rate">(src.types.data_types.MarketSnapshot attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel">ShortRateModel (class in src.models.short_rate_model)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore">ShortRateStore (class in src.dataloaders.short_rate_store)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.ShortRateTarget">ShortRateTarget (class in src.types.data_types)</a>
+</li>
+      <li><a href="api/models.html#src.models.nsde.Simple_NeuralSDE">Simple_NeuralSDE (class in src.models.nsde)</a>
+</li>
+      <li><a href="api/models.html#src.models.bond_net.SimpleBondNet">SimpleBondNet (class in src.models.bond_net)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg">SimpleBondNetCfg (class in src.configs.config_bondnet)</a>
+</li>
+      <li><a href="api/models.html#src.models.short_rate_model.ShortRateModel.simulate">simulate() (src.models.short_rate_model.ShortRateModel method)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.SingleFutureTarget">SingleFutureTarget (class in src.types.data_types)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.skip_nan_loss">skip_nan_loss (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg.slow_net">slow_net (src.configs.config_encoder.EncoderCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.solver">solver (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.split_conversion_factors">split_conversion_factors() (src.types.data_types.BatchedFuturesTarget method)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.split_deliverable_ids">split_deliverable_ids() (src.types.data_types.BatchedFuturesTarget method)</a>
+</li>
+      <li>
+    src.configs.config_bondnet
+
+      <ul>
+        <li><a href="api/configs.html#module-src.configs.config_bondnet">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.configs.config_encoder
+
+      <ul>
+        <li><a href="api/configs.html#module-src.configs.config_encoder">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.configs.config_loader
+
+      <ul>
+        <li><a href="api/configs.html#module-src.configs.config_loader">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.configs.config_nn
+
+      <ul>
+        <li><a href="api/configs.html#module-src.configs.config_nn">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.configs.config_nsde
+
+      <ul>
+        <li><a href="api/configs.html#module-src.configs.config_nsde">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.configs.config_trainer
+
+      <ul>
+        <li><a href="api/configs.html#module-src.configs.config_trainer">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.dataloaders.bond_metadata_store
+
+      <ul>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.bond_metadata_store">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.dataloaders.calendar
+
+      <ul>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.calendar">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.dataloaders.futures_store
+
+      <ul>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.futures_store">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.dataloaders.market_loader
+
+      <ul>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.market_loader">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.dataloaders.short_rate_store
+
+      <ul>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.short_rate_store">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.dataloaders.yield_store
+
+      <ul>
+        <li><a href="api/dataloaders.html#module-src.dataloaders.yield_store">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    src.finance.pricer_v2
+
+      <ul>
+        <li><a href="api/finance.html#module-src.finance.pricer_v2">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.models.bond_net
+
+      <ul>
+        <li><a href="api/models.html#module-src.models.bond_net">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.models.encoders
+
+      <ul>
+        <li><a href="api/models.html#module-src.models.encoders">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.models.nsde
+
+      <ul>
+        <li><a href="api/models.html#module-src.models.nsde">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.models.short_rate_model
+
+      <ul>
+        <li><a href="api/models.html#module-src.models.short_rate_model">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.nn.affine
+
+      <ul>
+        <li><a href="api/models.html#module-src.nn.affine">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.nn.constant
+
+      <ul>
+        <li><a href="api/models.html#module-src.nn.constant">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.nn.generator
+
+      <ul>
+        <li><a href="api/models.html#module-src.nn.generator">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.nn.gru
+
+      <ul>
+        <li><a href="api/models.html#module-src.nn.gru">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.nn.lstm
+
+      <ul>
+        <li><a href="api/models.html#module-src.nn.lstm">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.nn.mamba
+
+      <ul>
+        <li><a href="api/models.html#module-src.nn.mamba">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.nn.mlp
+
+      <ul>
+        <li><a href="api/models.html#module-src.nn.mlp">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.nn.rnn
+
+      <ul>
+        <li><a href="api/models.html#module-src.nn.rnn">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.training.gridsearch
+
+      <ul>
+        <li><a href="api/training.html#module-src.training.gridsearch">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.training.loss
+
+      <ul>
+        <li><a href="api/training.html#module-src.training.loss">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.training.train_utils
+
+      <ul>
+        <li><a href="api/training.html#module-src.training.train_utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.training.trainer
+
+      <ul>
+        <li><a href="api/training.html#module-src.training.trainer">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.types.data_types
+
+      <ul>
+        <li><a href="api/types.html#module-src.types.data_types">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.types.eval_results_types
+
+      <ul>
+        <li><a href="api/types.html#module-src.types.eval_results_types">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.types.gridsearch_types
+
+      <ul>
+        <li><a href="api/types.html#module-src.types.gridsearch_types">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.types.types_utils
+
+      <ul>
+        <li><a href="api/types.html#module-src.types.types_utils">module</a>
+</li>
+      </ul></li>
+      <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.start_date">start_date (src.configs.config_loader.DataLoaderCfg attribute)</a>
+
+      <ul>
+        <li><a href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.start_date">(src.dataloaders.calendar.MarketCalendar property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.tickers">tickers (src.dataloaders.futures_store.FuturesStore property)</a>
+</li>
+      <li><a href="api/types.html#src.types.gridsearch_types.GridSearchResults.to_json">to_json() (src.types.gridsearch_types.GridSearchResults method)</a>
+</li>
+      <li><a href="api/finance.html#src.finance.pricer_v2.to_year_fraction">to_year_fraction() (in module src.finance.pricer_v2)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.BatchedFuturesTarget.total_deliverables">total_deliverables (src.types.data_types.BatchedFuturesTarget property)</a>
+</li>
+      <li><a href="api/types.html#src.types.eval_results_types.EvalResults.total_loss">total_loss (src.types.eval_results_types.EvalResults attribute)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer.train">train() (src.training.trainer.Trainer method)</a>
+</li>
+      <li><a href="api/training.html#src.training.trainer.Trainer">Trainer (class in src.training.trainer)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg">TrainerCfg (class in src.configs.config_trainer)</a>
+</li>
+      <li><a href="api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.training_windows">training_windows() (src.dataloaders.calendar.MarketCalendar method)</a>
+</li>
+      <li><a href="api/types.html#src.types.gridsearch_types.TrialResult">TrialResult (class in src.types.gridsearch_types)</a>
+</li>
+      <li><a href="api/types.html#src.types.gridsearch_types.GridSearchResults.trials">trials (src.types.gridsearch_types.GridSearchResults attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.trunk_n_layers">trunk_n_layers (src.configs.config_bondnet.FiLMBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.trunk_n_units">trunk_n_units (src.configs.config_bondnet.FiLMBondNetCfg attribute)</a>
+</li>
+      <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.type">type (src.configs.config_nsde.NSDECfg attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.use_amp">use_amp (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.use_ema">use_ema (src.configs.config_trainer.EarlyStoppingCfg attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_encoder.EncoderCfg.validate">validate() (src.configs.config_encoder.EncoderCfg method)</a>
+
+      <ul>
+        <li><a href="api/configs.html#src.configs.config_loader.DataLoaderCfg.validate">(src.configs.config_loader.DataLoaderCfg method)</a>
+</li>
+        <li><a href="api/configs.html#src.configs.config_nsde.NSDECfg.validate">(src.configs.config_nsde.NSDECfg method)</a>
+</li>
+        <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.validate">(src.configs.config_trainer.TrainerCfg method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/types.html#src.types.gridsearch_types.TrialResult.value">value (src.types.gridsearch_types.TrialResult attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/training.html#src.training.train_utils.WarmupCosineScheduler">WarmupCosineScheduler (class in src.training.train_utils)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/configs.html#src.configs.config_trainer.TrainerCfg.window_step">window_step (src.configs.config_trainer.TrainerCfg attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Y">Y</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/types.html#src.types.data_types.MarketSnapshot.yield_curve">yield_curve (src.types.data_types.MarketSnapshot attribute)</a>
+</li>
+      <li><a href="api/training.html#src.training.loss.YieldCurveLoss">YieldCurveLoss (class in src.training.loss)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore">YieldCurveStore (class in src.dataloaders.yield_store)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.YieldCurveTarget">YieldCurveTarget (class in src.types.data_types)</a>
+</li>
+      <li><a href="api/types.html#src.types.data_types.YieldCurveTarget.yields">yields (src.types.data_types.YieldCurveTarget attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Imperial College Treasury Modelling Team.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

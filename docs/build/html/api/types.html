@@ -1,0 +1,1331 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Types &mdash; IRM2 — Neural Short-Rate Calibration</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=0bd0538f" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8b008d"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Training" href="training.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #1f3855" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            IRM2
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#high-level-pipeline">High-level pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#layer-responsibilities">Layer responsibilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#where-to-put-things">Where to put things</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../install.html#runtime">Runtime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install.html#building-the-docs">Building the docs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install.html#running-the-tests">Running the tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install.html#repository-layout">Repository layout</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/dataflow.html">Data flow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/dataflow.html#step-1-store-construction-once">Step 1 — store construction (once)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/dataflow.html#step-2-snapshot-per-date">Step 2 — snapshot per date</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/dataflow.html#active-futures-filter">Active-futures filter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/dataflow.html#bond-metadata">Bond metadata</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/dataflow.html#step-3-encoder-input">Step 3 — encoder input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/dataflow.html#step-4-model-forward">Step 4 — model forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/dataflow.html#step-5-pricing">Step 5 — pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/dataflow.html#step-6-loss">Step 6 — loss</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/types.html">Type contracts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/types.html#encoderinputs">EncoderInputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/types.html#yieldcurvetarget-shortratetarget">YieldCurveTarget / ShortRateTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/types.html#singlefuturetarget">SingleFutureTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/types.html#batchedfuturestarget">BatchedFuturesTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/types.html#bondfeatures">BondFeatures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/types.html#marketsnapshot">MarketSnapshot</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/pricing.html">Pricing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/pricing.html#yield-curve-pricing">Yield-curve pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/pricing.html#short-rate-observable">Short-rate observable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/pricing.html#futures-pricing-cheapest-to-deliver-mc">Futures pricing — cheapest-to-deliver MC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/pricing.html#no-look-ahead-alignment">No-look-ahead alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/pricing.html#year-fraction-convention">Year-fraction convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/training.html">Training loop</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/training.html#window-structure">Window structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/training.html#per-window-batching">Per-window batching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/training.html#nsde-solver-backend">NSDE solver backend</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/training.html#loss-composition">Loss composition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/training.html#amp-and-precision-policy">AMP and precision policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/training.html#reproducibility">Reproducibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/training.html#checkpoints">Checkpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/training.html#evaluation">Evaluation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/01_load_market_data.html">Example 1 — Loading and inspecting market data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/01_load_market_data.html#the-simplest-loader-yields-only">1.1 The simplest loader (yields only)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/01_load_market_data.html#inspect-a-single-snapshot">1.2 Inspect a single snapshot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/01_load_market_data.html#enable-futures-and-bond-metadata">1.3 Enable futures and bond metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/01_load_market_data.html#walking-the-calendar">1.4 Walking the calendar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/01_load_market_data.html#encoder-histories">1.5 Encoder histories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/01_load_market_data.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/02_build_and_train_model.html">Example 2 — Building and training a model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/02_build_and_train_model.html#imports-and-config">2.1 Imports and config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/02_build_and_train_model.html#data-encoder-nsde">2.2 Data + encoder + NSDE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/02_build_and_train_model.html#bondnet">2.3 BondNet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/02_build_and_train_model.html#model">2.4 Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/02_build_and_train_model.html#trainer">2.5 Trainer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/02_build_and_train_model.html#outputs">2.6 Outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/02_build_and_train_model.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/03_evaluate_and_inspect.html">Example 3 — Evaluation and inspection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/03_evaluate_and_inspect.html#evaluation">3.1 Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/03_evaluate_and_inspect.html#model-implied-observables-no-loss">3.2 Model-implied observables (no loss)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/03_evaluate_and_inspect.html#loss-trajectories">3.3 Loss trajectories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/03_evaluate_and_inspect.html#loading-a-saved-model-back">3.4 Loading a saved model back</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/03_evaluate_and_inspect.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/04_futures_pricing_walkthrough.html">Example 4 — Futures pricing, end-to-end</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/04_futures_pricing_walkthrough.html#build-the-pieces">4.1 Build the pieces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/04_futures_pricing_walkthrough.html#wire-up-the-model">4.2 Wire up the model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/04_futures_pricing_walkthrough.html#simulate-latent-paths">4.3 Simulate latent paths</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/04_futures_pricing_walkthrough.html#call-the-pricer">4.4 Call the pricer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/04_futures_pricing_walkthrough.html#what-just-happened-shape-by-shape">4.5 What just happened — shape-by-shape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/04_futures_pricing_walkthrough.html#sanity-check-the-ctd-reduction-by-hand">4.6 Sanity check the CTD reduction by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/04_futures_pricing_walkthrough.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/05_gridsearch.html">Example 5 — Optuna grid search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/05_gridsearch.html#a-minimal-grid">5.1 A minimal grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/05_gridsearch.html#what-to-search">5.2 What to search</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../examples/05_gridsearch.html#tier-1-must-search">Tier 1 — must search</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples/05_gridsearch.html#tier-2-add-once-tier-1-settles">Tier 2 — add once Tier 1 settles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples/05_gridsearch.html#tier-3-set-and-forget">Tier 3 — set-and-forget</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples/05_gridsearch.html#do-not-grid">Do <strong>not</strong> grid</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/05_gridsearch.html#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="configs.html">Configs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.data_path"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.data_path</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.start_date"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.start_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.end_date"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.end_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.max_maturity"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.max_maturity</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.business_days_per_year"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.business_days_per_year</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.enable_yield"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_yield</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.enable_short_rate"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.enable_bonds"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_bonds</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.enable_futures"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.enable_options"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_options</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.device"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.dtype"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_loader.DataLoaderCfg.validate"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg"><code class="docutils literal notranslate"><span class="pre">EncoderCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg.mode"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg.preprocess_mode"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.preprocess_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg.out_norm"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.out_norm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg.net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg.fast_net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.fast_net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg.slow_net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.slow_net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg.combine"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.combine</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_encoder.EncoderCfg.validate"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg"><code class="docutils literal notranslate"><span class="pre">NSDECfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.type"><code class="docutils literal notranslate"><span class="pre">NSDECfg.type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.noise_type"><code class="docutils literal notranslate"><span class="pre">NSDECfg.noise_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.solver"><code class="docutils literal notranslate"><span class="pre">NSDECfg.solver</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.method"><code class="docutils literal notranslate"><span class="pre">NSDECfg.method</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.adjoint"><code class="docutils literal notranslate"><span class="pre">NSDECfg.adjoint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.rtol"><code class="docutils literal notranslate"><span class="pre">NSDECfg.rtol</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.atol"><code class="docutils literal notranslate"><span class="pre">NSDECfg.atol</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.dt"><code class="docutils literal notranslate"><span class="pre">NSDECfg.dt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.drift"><code class="docutils literal notranslate"><span class="pre">NSDECfg.drift</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.diffusion"><code class="docutils literal notranslate"><span class="pre">NSDECfg.diffusion</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.long_term_mean"><code class="docutils literal notranslate"><span class="pre">NSDECfg.long_term_mean</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.mean_reversion"><code class="docutils literal notranslate"><span class="pre">NSDECfg.mean_reversion</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_nsde.NSDECfg.validate"><code class="docutils literal notranslate"><span class="pre">NSDECfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_bondnet.BaseBondNetCfg"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.BaseBondNetCfg.latent_dim"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.latent_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.BaseBondNetCfg.bond_feat_dim"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.bond_feat_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.BaseBondNetCfg.activation"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.activation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.BaseBondNetCfg.out_activation"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.out_activation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.BaseBondNetCfg.dropout"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.dropout</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.BaseBondNetCfg.output_positive"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.output_positive</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_bondnet.SimpleBondNetCfg"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.SimpleBondNetCfg.latent_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.latent_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.SimpleBondNetCfg.latent_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.latent_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.SimpleBondNetCfg.bond_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.bond_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.SimpleBondNetCfg.bond_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.bond_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.SimpleBondNetCfg.fusion_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.fusion_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.SimpleBondNetCfg.fusion_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.fusion_n_units</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_bondnet.FiLMBondNetCfg"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.FiLMBondNetCfg.trunk_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.trunk_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.FiLMBondNetCfg.trunk_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.trunk_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.FiLMBondNetCfg.film_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.film_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.FiLMBondNetCfg.film_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.film_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.FiLMBondNetCfg.head_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.head_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.FiLMBondNetCfg.head_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.head_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_bondnet.FiLMBondNetCfg.hidden_dim"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.hidden_dim</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_bondnet.BondNetCfg"><code class="docutils literal notranslate"><span class="pre">BondNetCfg</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_trainer.OptimizerCfg"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.OptimizerCfg.name"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.OptimizerCfg.params"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_trainer.SchedulerCfg"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.SchedulerCfg.name"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.SchedulerCfg.params"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_trainer.LossCfg"><code class="docutils literal notranslate"><span class="pre">LossCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.LossCfg.name"><code class="docutils literal notranslate"><span class="pre">LossCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.LossCfg.params"><code class="docutils literal notranslate"><span class="pre">LossCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_trainer.CheckpointCfg"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.CheckpointCfg.mode"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.CheckpointCfg.save_best_only"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.save_best_only</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.CheckpointCfg.every_n_epochs"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.every_n_epochs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.CheckpointCfg.max_to_keep"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.max_to_keep</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_trainer.EarlyStoppingCfg"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.EarlyStoppingCfg.enabled"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.enabled</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.EarlyStoppingCfg.patience"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.patience</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.EarlyStoppingCfg.min_delta"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.min_delta</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.EarlyStoppingCfg.use_ema"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.use_ema</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.EarlyStoppingCfg.ema_alpha"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.ema_alpha</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg"><code class="docutils literal notranslate"><span class="pre">TrainerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.n_paths"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.n_paths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.batch_window"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.batch_window</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.window_step"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.window_step</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.dt"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.dt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.lookback"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.lookback_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.lookback_fast"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_fast</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.lookback_fast_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_fast_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.lookback_slow"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_slow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.lookback_slow_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_slow_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.optimizer"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.optimizer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.scheduler"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.scheduler</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.loss"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.use_amp"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.use_amp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.grad_clip_norm"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.grad_clip_norm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.accumulate_windows"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.accumulate_windows</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.compile_nsde"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.compile_nsde</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.seed"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.seed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.deterministic"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.deterministic</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.results_root"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.results_root</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.run_name"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.run_name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.debug"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.debug</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.checkpoint"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.checkpoint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.early_stopping"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.early_stopping</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.skip_nan_loss"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.skip_nan_loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.log_every_n_windows"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.log_every_n_windows</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="configs.html#src.configs.config_trainer.TrainerCfg.validate"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configs.html#required-key">Required key</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dataloaders.html">Dataloaders</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dataloaders.html#src.dataloaders.calendar.MarketCalendar"><code class="docutils literal notranslate"><span class="pre">MarketCalendar</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.calendar.MarketCalendar.dates"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.calendar.MarketCalendar.start_date"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.start_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.calendar.MarketCalendar.end_date"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.end_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.calendar.MarketCalendar.between"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.between()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.calendar.MarketCalendar.last_available_on_or_before"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.last_available_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.calendar.MarketCalendar.next_available_after"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.next_available_after()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.calendar.MarketCalendar.training_windows"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.training_windows()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.data"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.max_maturity"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.max_maturity</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.device"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.dtype"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.from_csv"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.dates"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_curve_on_or_before"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_curve_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_curve"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_next_curve"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_next_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_maturities"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_maturities()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_encoder_history"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_encoder_history()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore"><code class="docutils literal notranslate"><span class="pre">ShortRateStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.data"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.device"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.dtype"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.from_csv"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_rate"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_rate_on_or_before"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_rate_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_encoder_history"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_encoder_history()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore"><code class="docutils literal notranslate"><span class="pre">FuturesStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.quotes_wide"><code class="docutils literal notranslate"><span class="pre">FuturesStore.quotes_wide</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.expirations"><code class="docutils literal notranslate"><span class="pre">FuturesStore.expirations</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.deliverables"><code class="docutils literal notranslate"><span class="pre">FuturesStore.deliverables</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.device"><code class="docutils literal notranslate"><span class="pre">FuturesStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.dtype"><code class="docutils literal notranslate"><span class="pre">FuturesStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.from_csv"><code class="docutils literal notranslate"><span class="pre">FuturesStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.dates"><code class="docutils literal notranslate"><span class="pre">FuturesStore.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.tickers"><code class="docutils literal notranslate"><span class="pre">FuturesStore.tickers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_date_on_or_before"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_date_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_price_on_or_before"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_price_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_prices"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_prices()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_active_tickers"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_active_tickers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_futures_target"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_futures_target()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_batched_futures_target"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_batched_futures_target()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.data"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.business_days_per_year"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.business_days_per_year</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.device"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.dtype"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.from_csv"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.ids"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.get_metadata"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.get_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.get_bond_features"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.get_bond_features()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.cfg"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.cfg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_dates_between"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_dates_between()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_last_available_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_last_available_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_next_available_yield_curve_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_next_available_yield_curve_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_available_yield_curve_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_available_yield_curve_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_batch_windows"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_batch_windows()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_histories"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_histories()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_history"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_history()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_snapshot"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_snapshot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel"><code class="docutils literal notranslate"><span class="pre">ShortRateModel</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.from_dicts"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.from_dicts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.encode"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.encode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.decode"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.decode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.simulate"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.simulate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.sample"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.sample()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.latent_dim"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.latent_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.noise_dim"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.noise_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.encoder_type"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.encoder_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.nsde_type"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.nsde_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.cache_training_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.cache_training_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.model_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.model_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.short_rate_model.ShortRateModel.save_model_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.save_model_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.encoders.Encoder"><code class="docutils literal notranslate"><span class="pre">Encoder</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.encoders.Encoder.forward"><code class="docutils literal notranslate"><span class="pre">Encoder.forward()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.encoders.Encoder.latent_dim"><code class="docutils literal notranslate"><span class="pre">Encoder.latent_dim</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.nsde.BaseNSDE"><code class="docutils literal notranslate"><span class="pre">BaseNSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.nsde.BaseNSDE.f"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.nsde.BaseNSDE.g"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.g()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.nsde.BaseNSDE.forward"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.nsde.Simple_NeuralSDE"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.nsde.Simple_NeuralSDE.f"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.nsde.Simple_NeuralSDE.g"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE.g()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.nsde.OU_NeuralSDE"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.nsde.OU_NeuralSDE.f"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.nsde.OU_NeuralSDE.g"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE.g()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.nsde.create_nsde_from_config"><code class="docutils literal notranslate"><span class="pre">create_nsde_from_config()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.bond_net.SimpleBondNet"><code class="docutils literal notranslate"><span class="pre">SimpleBondNet</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.bond_net.SimpleBondNet.forward"><code class="docutils literal notranslate"><span class="pre">SimpleBondNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.bond_net.FiLMBondNet"><code class="docutils literal notranslate"><span class="pre">FiLMBondNet</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.models.bond_net.FiLMBondNet.forward"><code class="docutils literal notranslate"><span class="pre">FiLMBondNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.bond_net.get_bond_net"><code class="docutils literal notranslate"><span class="pre">get_bond_net()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#src.models.bond_net.BondNet"><code class="docutils literal notranslate"><span class="pre">BondNet</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#module-src.nn.mlp">Backbone networks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.mlp.MLP"><code class="docutils literal notranslate"><span class="pre">MLP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.rnn.RNN"><code class="docutils literal notranslate"><span class="pre">RNN</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#src.nn.rnn.RNN.forward"><code class="docutils literal notranslate"><span class="pre">RNN.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.lstm.LSTM"><code class="docutils literal notranslate"><span class="pre">LSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#src.nn.lstm.LSTM.forward"><code class="docutils literal notranslate"><span class="pre">LSTM.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.gru.GRU"><code class="docutils literal notranslate"><span class="pre">GRU</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#src.nn.gru.GRU.forward"><code class="docutils literal notranslate"><span class="pre">GRU.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.mamba.MambaBlock"><code class="docutils literal notranslate"><span class="pre">MambaBlock</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#src.nn.mamba.MambaBlock.forward"><code class="docutils literal notranslate"><span class="pre">MambaBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.mamba.MambaEncoder"><code class="docutils literal notranslate"><span class="pre">MambaEncoder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#src.nn.mamba.MambaEncoder.forward"><code class="docutils literal notranslate"><span class="pre">MambaEncoder.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.affine.AffineNet"><code class="docutils literal notranslate"><span class="pre">AffineNet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#src.nn.affine.AffineNet.forward"><code class="docutils literal notranslate"><span class="pre">AffineNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.constant.ConstantNet"><code class="docutils literal notranslate"><span class="pre">ConstantNet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#src.nn.constant.ConstantNet.forward"><code class="docutils literal notranslate"><span class="pre">ConstantNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#src.nn.generator.create_network_from_config"><code class="docutils literal notranslate"><span class="pre">create_network_from_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="finance.html">Pricing (<code class="docutils literal notranslate"><span class="pre">src.finance</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="finance.html#src.finance.pricer_v2.to_year_fraction"><code class="docutils literal notranslate"><span class="pre">to_year_fraction()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="finance.html#src.finance.pricer_v2.Pricer"><code class="docutils literal notranslate"><span class="pre">Pricer</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="finance.html#src.finance.pricer_v2.Pricer.price_zcb"><code class="docutils literal notranslate"><span class="pre">Pricer.price_zcb()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="finance.html#src.finance.pricer_v2.Pricer.price_yield_curve"><code class="docutils literal notranslate"><span class="pre">Pricer.price_yield_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="finance.html#src.finance.pricer_v2.Pricer.price_short_rate"><code class="docutils literal notranslate"><span class="pre">Pricer.price_short_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="finance.html#src.finance.pricer_v2.Pricer.price_futures"><code class="docutils literal notranslate"><span class="pre">Pricer.price_futures()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="finance.html#src.finance.pricer_v2.Pricer.price_snapshot"><code class="docutils literal notranslate"><span class="pre">Pricer.price_snapshot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="training.html#src.training.trainer.Trainer"><code class="docutils literal notranslate"><span class="pre">Trainer</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.get_latent_representation_from_date"><code class="docutils literal notranslate"><span class="pre">Trainer.get_latent_representation_from_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.get_realisations_from_date"><code class="docutils literal notranslate"><span class="pre">Trainer.get_realisations_from_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.train"><code class="docutils literal notranslate"><span class="pre">Trainer.train()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.evaluate"><code class="docutils literal notranslate"><span class="pre">Trainer.evaluate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.evaluate_training_set"><code class="docutils literal notranslate"><span class="pre">Trainer.evaluate_training_set()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.compute_prices"><code class="docutils literal notranslate"><span class="pre">Trainer.compute_prices()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.record_training_info"><code class="docutils literal notranslate"><span class="pre">Trainer.record_training_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.record_finetune_info"><code class="docutils literal notranslate"><span class="pre">Trainer.record_finetune_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.trainer.Trainer.save_training_artifacts"><code class="docutils literal notranslate"><span class="pre">Trainer.save_training_artifacts()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#src.training.train_utils.WarmupCosineScheduler"><code class="docutils literal notranslate"><span class="pre">WarmupCosineScheduler</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.train_utils.WarmupCosineScheduler.get_lr"><code class="docutils literal notranslate"><span class="pre">WarmupCosineScheduler.get_lr()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#src.training.train_utils.build_optimizer"><code class="docutils literal notranslate"><span class="pre">build_optimizer()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#src.training.train_utils.build_loss"><code class="docutils literal notranslate"><span class="pre">build_loss()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#src.training.train_utils.build_scheduler"><code class="docutils literal notranslate"><span class="pre">build_scheduler()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#src.training.loss.YieldCurveLoss"><code class="docutils literal notranslate"><span class="pre">YieldCurveLoss</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.loss.YieldCurveLoss.forward"><code class="docutils literal notranslate"><span class="pre">YieldCurveLoss.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#src.training.gridsearch.OptunaGridSearch"><code class="docutils literal notranslate"><span class="pre">OptunaGridSearch</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training.html#src.training.gridsearch.OptunaGridSearch.run"><code class="docutils literal notranslate"><span class="pre">OptunaGridSearch.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.data_types.EncoderInputs"><code class="docutils literal notranslate"><span class="pre">EncoderInputs</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.EncoderInputs.curve_history"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.curve_history</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.EncoderInputs.short_rate"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.EncoderInputs.dates"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.dates</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.data_types.BondFeatures"><code class="docutils literal notranslate"><span class="pre">BondFeatures</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BondFeatures.ids"><code class="docutils literal notranslate"><span class="pre">BondFeatures.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BondFeatures.features"><code class="docutils literal notranslate"><span class="pre">BondFeatures.features</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BondFeatures.feature_names"><code class="docutils literal notranslate"><span class="pre">BondFeatures.feature_names</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BondFeatures.asof_date"><code class="docutils literal notranslate"><span class="pre">BondFeatures.asof_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BondFeatures.metadata"><code class="docutils literal notranslate"><span class="pre">BondFeatures.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.data_types.YieldCurveTarget"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.YieldCurveTarget.date"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.YieldCurveTarget.maturities"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.maturities</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.YieldCurveTarget.yields"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.yields</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.data_types.ShortRateTarget"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.ShortRateTarget.date"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.ShortRateTarget.rate"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget.rate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.data_types.BondTarget"><code class="docutils literal notranslate"><span class="pre">BondTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BondTarget.ids"><code class="docutils literal notranslate"><span class="pre">BondTarget.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BondTarget.prices"><code class="docutils literal notranslate"><span class="pre">BondTarget.prices</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BondTarget.metadata"><code class="docutils literal notranslate"><span class="pre">BondTarget.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget.id"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget.date"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget.price"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.price</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget.delivery_date"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.delivery_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget.deliverable_ids"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.deliverable_ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget.conversion_factors"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.conversion_factors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget.metadata"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.SingleFutureTarget.basket_size"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.basket_size</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.ids"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.prices"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.prices</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.asof_date"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.asof_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.delivery_dates"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.delivery_dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.basket_lengths"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.basket_lengths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.conversion_factors_flat"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.conversion_factors_flat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.deliverable_ids_flat"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.deliverable_ids_flat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.metadata"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.n_futures"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.n_futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.total_deliverables"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.total_deliverables</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.split_conversion_factors"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.split_conversion_factors()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget.split_deliverable_ids"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.split_deliverable_ids()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.data_types.MarketSnapshot"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.MarketSnapshot.date"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.MarketSnapshot.yield_curve"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.yield_curve</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.MarketSnapshot.short_rate"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.MarketSnapshot.bonds"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.bonds</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.MarketSnapshot.bonds_metadata"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.bonds_metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.MarketSnapshot.futures"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.data_types.MarketSnapshot.meta"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.meta</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.types_utils.normalize_date"><code class="docutils literal notranslate"><span class="pre">normalize_date()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.types_utils.merge_single_future_targets"><code class="docutils literal notranslate"><span class="pre">merge_single_future_targets()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.eval_results_types.EvalResults"><code class="docutils literal notranslate"><span class="pre">EvalResults</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.eval_results_types.EvalResults.date"><code class="docutils literal notranslate"><span class="pre">EvalResults.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.eval_results_types.EvalResults.n_paths"><code class="docutils literal notranslate"><span class="pre">EvalResults.n_paths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.eval_results_types.EvalResults.total_loss"><code class="docutils literal notranslate"><span class="pre">EvalResults.total_loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.eval_results_types.EvalResults.components"><code class="docutils literal notranslate"><span class="pre">EvalResults.components</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.eval_results_types.EvalResults.meta"><code class="docutils literal notranslate"><span class="pre">EvalResults.meta</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.eval_results_types.eval_results_to_frame"><code class="docutils literal notranslate"><span class="pre">eval_results_to_frame()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.gridsearch_types.TrialResult"><code class="docutils literal notranslate"><span class="pre">TrialResult</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.gridsearch_types.TrialResult.number"><code class="docutils literal notranslate"><span class="pre">TrialResult.number</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.gridsearch_types.TrialResult.value"><code class="docutils literal notranslate"><span class="pre">TrialResult.value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.gridsearch_types.TrialResult.params"><code class="docutils literal notranslate"><span class="pre">TrialResult.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#src.types.gridsearch_types.GridSearchResults"><code class="docutils literal notranslate"><span class="pre">GridSearchResults</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.gridsearch_types.GridSearchResults.best_value"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.best_value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.gridsearch_types.GridSearchResults.best_params"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.best_params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.gridsearch_types.GridSearchResults.trials"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.trials</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#src.types.gridsearch_types.GridSearchResults.to_json"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.to_json()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #1f3855" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IRM2</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Types</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul><div class="rst-breadcrumbs-buttons" role="navigation" aria-label="Sequential page navigation">
+        <a href="training.html" class="btn btn-neutral float-left" title="Training" accesskey="p"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+  </div>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-src.types.data_types">
+<span id="types"></span><h1>Types<a class="headerlink" href="#module-src.types.data_types" title="Link to this heading"></a></h1>
+<p>Frozen dataclasses used as the contract between the data layer, the model,
+and the pricer.</p>
+<p>All dataclasses below are intentionally frozen and carry only tensors / metadata
+— treat them as immutable bundles. They are NOT meant to be compared by value
+(tensor <code class="docutils literal notranslate"><span class="pre">__eq__</span></code> is elementwise and would either misfire or be expensive).</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.data_types.EncoderInputs">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.data_types.</span></span><span class="sig-name descname"><span class="pre">EncoderInputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">curve_history</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">short_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#EncoderInputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.EncoderInputs" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Encoder input bundle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>curve_history</strong> (<em>Union</em><em>[</em><em>Tensor</em><em>, </em><em>Tuple</em><em>[</em><em>Tensor</em><em>, </em><em>Tensor</em><em>]</em><em>]</em>) – Yield-curve history. For ‘simple’ encoders: a Tensor of shape (T, M).
+For ‘hierarchical’ encoders: a tuple (fast_history, slow_history).</p></li>
+<li><p><strong>short_rate</strong> (<em>Optional</em><em>[</em><em>Union</em><em>[</em><em>Tensor</em><em>, </em><em>Tuple</em><em>[</em><em>Tensor</em><em>, </em><em>Tensor</em><em>]</em><em>]</em><em>]</em>) – Optional short-rate history aligned with <cite>curve_history</cite>.
+Same shape convention as <cite>curve_history</cite>. May be None.</p></li>
+<li><p><strong>dates</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>]</em>) – Optional list of timestamps aligned with <cite>curve_history</cite> rows
+(debug / plotting only — never used by the encoder forward).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>curve_history</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]]</span>)</p></li>
+<li><p><strong>short_rate</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>, <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]</span>)</p></li>
+<li><p><strong>dates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.EncoderInputs.curve_history">
+<span class="sig-name descname"><span class="pre">curve_history</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.EncoderInputs.curve_history" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.EncoderInputs.short_rate">
+<span class="sig-name descname"><span class="pre">short_rate</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.types.data_types.EncoderInputs.short_rate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.EncoderInputs.dates">
+<span class="sig-name descname"><span class="pre">dates</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.types.data_types.EncoderInputs.dates" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.data_types.BondFeatures">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.data_types.</span></span><span class="sig-name descname"><span class="pre">BondFeatures</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asof_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#BondFeatures"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.BondFeatures" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Fixed-size bond features evaluated at a given reference date.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ids</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – Bond identifiers in the same order as rows of <cite>features</cite>.</p></li>
+<li><p><strong>features</strong> (<em>Tensor</em>) – Feature matrix of shape (N_bonds, d_features).</p></li>
+<li><p><strong>feature_names</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – Column names for <cite>features</cite>, length d_features.</p></li>
+<li><p><strong>asof_date</strong> (<em>pd.Timestamp</em>) – Reference date at which the features were computed.</p></li>
+<li><p><strong>metadata</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Free-form metadata bag (provenance, warnings, etc.).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ids</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>)</p></li>
+<li><p><strong>features</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+<li><p><strong>feature_names</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>)</p></li>
+<li><p><strong>asof_date</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></span>)</p></li>
+<li><p><strong>metadata</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BondFeatures.ids">
+<span class="sig-name descname"><span class="pre">ids</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BondFeatures.ids" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BondFeatures.features">
+<span class="sig-name descname"><span class="pre">features</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.BondFeatures.features" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BondFeatures.feature_names">
+<span class="sig-name descname"><span class="pre">feature_names</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BondFeatures.feature_names" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BondFeatures.asof_date">
+<span class="sig-name descname"><span class="pre">asof_date</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Timestamp</span></span><a class="headerlink" href="#src.types.data_types.BondFeatures.asof_date" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BondFeatures.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BondFeatures.metadata" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.data_types.YieldCurveTarget">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.data_types.</span></span><span class="sig-name descname"><span class="pre">YieldCurveTarget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maturities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#YieldCurveTarget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.YieldCurveTarget" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Observed yield curve at a date.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date</strong> (<em>pd.Timestamp</em>) – As-of date.</p></li>
+<li><p><strong>maturities</strong> (<em>Tensor</em>) – Maturities in years, shape (M,).</p></li>
+<li><p><strong>yields</strong> (<em>Tensor</em>) – Observed yields aligned with <cite>maturities</cite>, shape (M,).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>date</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></span>)</p></li>
+<li><p><strong>maturities</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+<li><p><strong>yields</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.YieldCurveTarget.date">
+<span class="sig-name descname"><span class="pre">date</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Timestamp</span></span><a class="headerlink" href="#src.types.data_types.YieldCurveTarget.date" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.YieldCurveTarget.maturities">
+<span class="sig-name descname"><span class="pre">maturities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.YieldCurveTarget.maturities" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.YieldCurveTarget.yields">
+<span class="sig-name descname"><span class="pre">yields</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.YieldCurveTarget.yields" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.data_types.ShortRateTarget">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.data_types.</span></span><span class="sig-name descname"><span class="pre">ShortRateTarget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#ShortRateTarget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.ShortRateTarget" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Observed short rate at a date.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date</strong> (<em>pd.Timestamp</em>) – As-of date.</p></li>
+<li><p><strong>rate</strong> (<em>Tensor</em>) – Scalar tensor (shape <cite>()</cite> or <cite>(1,)</cite>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>date</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></span>)</p></li>
+<li><p><strong>rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.ShortRateTarget.date">
+<span class="sig-name descname"><span class="pre">date</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Timestamp</span></span><a class="headerlink" href="#src.types.data_types.ShortRateTarget.date" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.ShortRateTarget.rate">
+<span class="sig-name descname"><span class="pre">rate</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.ShortRateTarget.rate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.data_types.BondTarget">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.data_types.</span></span><span class="sig-name descname"><span class="pre">BondTarget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#BondTarget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.BondTarget" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Bond quotes observed at a date.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ids</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – Bond identifiers.</p></li>
+<li><p><strong>prices</strong> (<em>Tensor</em>) – Bond prices, shape (N_bonds,).</p></li>
+<li><p><strong>metadata</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Free-form metadata (coupon schedule, daycount, accrual, settlement, …).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ids</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>)</p></li>
+<li><p><strong>prices</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+<li><p><strong>metadata</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BondTarget.ids">
+<span class="sig-name descname"><span class="pre">ids</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BondTarget.ids" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BondTarget.prices">
+<span class="sig-name descname"><span class="pre">prices</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.BondTarget.prices" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BondTarget.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BondTarget.metadata" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.data_types.</span></span><span class="sig-name descname"><span class="pre">SingleFutureTarget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delivery_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deliverable_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion_factors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#SingleFutureTarget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.SingleFutureTarget" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Observation of one futures contract at one date.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Contract ticker (e.g. ‘TYH2016’).</p></li>
+<li><p><strong>date</strong> (<em>pd.Timestamp</em>) – As-of date of the observation.</p></li>
+<li><p><strong>price</strong> (<em>Tensor</em>) – Quoted price as a scalar tensor.</p></li>
+<li><p><strong>delivery_date</strong> (<em>pd.Timestamp</em>) – Contract delivery date.</p></li>
+<li><p><strong>deliverable_ids</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – Bond identifiers in the delivery basket.</p></li>
+<li><p><strong>conversion_factors</strong> (<em>Tensor</em>) – Per-bond conversion factors, shape (basket_size,).</p></li>
+<li><p><strong>metadata</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Free-form metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>)</p></li>
+<li><p><strong>date</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></span>)</p></li>
+<li><p><strong>price</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+<li><p><strong>delivery_date</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></span>)</p></li>
+<li><p><strong>deliverable_ids</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>)</p></li>
+<li><p><strong>conversion_factors</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+<li><p><strong>metadata</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget.id">
+<span class="sig-name descname"><span class="pre">id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#src.types.data_types.SingleFutureTarget.id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget.date">
+<span class="sig-name descname"><span class="pre">date</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Timestamp</span></span><a class="headerlink" href="#src.types.data_types.SingleFutureTarget.date" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget.price">
+<span class="sig-name descname"><span class="pre">price</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.SingleFutureTarget.price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget.delivery_date">
+<span class="sig-name descname"><span class="pre">delivery_date</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Timestamp</span></span><a class="headerlink" href="#src.types.data_types.SingleFutureTarget.delivery_date" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget.deliverable_ids">
+<span class="sig-name descname"><span class="pre">deliverable_ids</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.SingleFutureTarget.deliverable_ids" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget.conversion_factors">
+<span class="sig-name descname"><span class="pre">conversion_factors</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.SingleFutureTarget.conversion_factors" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.SingleFutureTarget.metadata" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.types.data_types.SingleFutureTarget.basket_size">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">basket_size</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#src.types.data_types.SingleFutureTarget.basket_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.data_types.</span></span><span class="sig-name descname"><span class="pre">BatchedFuturesTarget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asof_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delivery_dates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basket_lengths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion_factors_flat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deliverable_ids_flat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#BatchedFuturesTarget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Batch of futures observed at the same as-of date, flattened-ragged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ids</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – Tickers, length N_futures.</p></li>
+<li><p><strong>prices</strong> (<em>Tensor</em>) – Quoted prices, shape (N_futures,).</p></li>
+<li><p><strong>asof_date</strong> (<em>pd.Timestamp</em>) – Shared as-of date for the batch.</p></li>
+<li><p><strong>delivery_dates</strong> (<em>List</em><em>[</em><em>pd.Timestamp</em><em>]</em>) – Per-future delivery dates, length N_futures.</p></li>
+<li><p><strong>basket_lengths</strong> (<em>Tensor</em>) – Per-future basket size, shape (N_futures,), dtype long.</p></li>
+<li><p><strong>conversion_factors_flat</strong> (<em>Tensor</em>) – Conversion factors concatenated across baskets,
+shape (sum_i basket_lengths[i],).</p></li>
+<li><p><strong>deliverable_ids_flat</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – Bond identifiers concatenated across baskets,
+length sum_i basket_lengths[i].</p></li>
+<li><p><strong>metadata</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Free-form metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ids</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>)</p></li>
+<li><p><strong>prices</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+<li><p><strong>asof_date</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></span>)</p></li>
+<li><p><strong>delivery_dates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span>)</p></li>
+<li><p><strong>basket_lengths</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+<li><p><strong>conversion_factors_flat</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></span>)</p></li>
+<li><p><strong>deliverable_ids_flat</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>)</p></li>
+<li><p><strong>metadata</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.ids">
+<span class="sig-name descname"><span class="pre">ids</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.ids" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.prices">
+<span class="sig-name descname"><span class="pre">prices</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.prices" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.asof_date">
+<span class="sig-name descname"><span class="pre">asof_date</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Timestamp</span></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.asof_date" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.delivery_dates">
+<span class="sig-name descname"><span class="pre">delivery_dates</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Timestamp</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.delivery_dates" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.basket_lengths">
+<span class="sig-name descname"><span class="pre">basket_lengths</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.basket_lengths" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.conversion_factors_flat">
+<span class="sig-name descname"><span class="pre">conversion_factors_flat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><span class="pre">Tensor</span></a></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.conversion_factors_flat" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.deliverable_ids_flat">
+<span class="sig-name descname"><span class="pre">deliverable_ids_flat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.deliverable_ids_flat" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.metadata" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.n_futures">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">n_futures</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.n_futures" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.total_deliverables">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">total_deliverables</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.total_deliverables" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.split_conversion_factors">
+<span class="sig-name descname"><span class="pre">split_conversion_factors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#BatchedFuturesTarget.split_conversion_factors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.split_conversion_factors" title="Link to this definition"></a></dt>
+<dd><p>Return the per-future conversion factor tensors as a list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.types.data_types.BatchedFuturesTarget.split_deliverable_ids">
+<span class="sig-name descname"><span class="pre">split_deliverable_ids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#BatchedFuturesTarget.split_deliverable_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.BatchedFuturesTarget.split_deliverable_ids" title="Link to this definition"></a></dt>
+<dd><p>Return the per-future deliverable id lists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.data_types.MarketSnapshot">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.data_types.</span></span><span class="sig-name descname"><span class="pre">MarketSnapshot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yield_curve</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">short_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bonds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bonds_metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">futures</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/data_types.html#MarketSnapshot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.data_types.MarketSnapshot" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Pricing template for a single date.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date</strong> (<em>Date</em>) – As-of date.</p></li>
+<li><p><strong>yield_curve</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#src.types.data_types.YieldCurveTarget" title="src.types.data_types.YieldCurveTarget"><em>YieldCurveTarget</em></a><em>]</em>) – Yield curve target. Usually present on every canonical date.</p></li>
+<li><p><strong>short_rate</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#src.types.data_types.ShortRateTarget" title="src.types.data_types.ShortRateTarget"><em>ShortRateTarget</em></a><em>]</em>) – Optional scalar short-rate target.</p></li>
+<li><p><strong>bonds</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#src.types.data_types.BondTarget" title="src.types.data_types.BondTarget"><em>BondTarget</em></a><em>]</em>) – Optional bond price observations.</p></li>
+<li><p><strong>bonds_metadata</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#src.types.data_types.BondFeatures" title="src.types.data_types.BondFeatures"><em>BondFeatures</em></a><em>]</em>) – Pre-computed bond features for any bonds referenced by <cite>bonds</cite>
+and/or by <cite>futures.deliverable_ids_flat</cite>. None if no bonds/futures
+are active.</p></li>
+<li><p><strong>futures</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget" title="src.types.data_types.BatchedFuturesTarget"><em>BatchedFuturesTarget</em></a><em>]</em>) – Optional batch of futures targets.</p></li>
+<li><p><strong>meta</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Free-form metadata.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>date</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><em>datetime</em></a><em> | </em><em>Timestamp</em>)</p></li>
+<li><p><strong>yield_curve</strong> (<a class="reference internal" href="#src.types.data_types.YieldCurveTarget" title="src.types.data_types.YieldCurveTarget"><em>YieldCurveTarget</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>short_rate</strong> (<a class="reference internal" href="#src.types.data_types.ShortRateTarget" title="src.types.data_types.ShortRateTarget"><em>ShortRateTarget</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>bonds</strong> (<a class="reference internal" href="#src.types.data_types.BondTarget" title="src.types.data_types.BondTarget"><em>BondTarget</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>bonds_metadata</strong> (<a class="reference internal" href="#src.types.data_types.BondFeatures" title="src.types.data_types.BondFeatures"><em>BondFeatures</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>futures</strong> (<a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget" title="src.types.data_types.BatchedFuturesTarget"><em>BatchedFuturesTarget</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>meta</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><em>Dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Missing instruments are represented as None. Conventions (e.g. yield
+maturities) are read from the corresponding target object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span>)</p></li>
+<li><p><strong>yield_curve</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#src.types.data_types.YieldCurveTarget" title="src.types.data_types.YieldCurveTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">YieldCurveTarget</span></code></a>]</span>)</p></li>
+<li><p><strong>short_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#src.types.data_types.ShortRateTarget" title="src.types.data_types.ShortRateTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">ShortRateTarget</span></code></a>]</span>)</p></li>
+<li><p><strong>bonds</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#src.types.data_types.BondTarget" title="src.types.data_types.BondTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">BondTarget</span></code></a>]</span>)</p></li>
+<li><p><strong>bonds_metadata</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#src.types.data_types.BondFeatures" title="src.types.data_types.BondFeatures"><code class="xref py py-class docutils literal notranslate"><span class="pre">BondFeatures</span></code></a>]</span>)</p></li>
+<li><p><strong>futures</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget" title="src.types.data_types.BatchedFuturesTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">BatchedFuturesTarget</span></code></a>]</span>)</p></li>
+<li><p><strong>meta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.MarketSnapshot.date">
+<span class="sig-name descname"><span class="pre">date</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Timestamp</span></span><a class="headerlink" href="#src.types.data_types.MarketSnapshot.date" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.MarketSnapshot.yield_curve">
+<span class="sig-name descname"><span class="pre">yield_curve</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.types.data_types.YieldCurveTarget" title="src.types.data_types.YieldCurveTarget"><span class="pre">YieldCurveTarget</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.types.data_types.MarketSnapshot.yield_curve" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.MarketSnapshot.short_rate">
+<span class="sig-name descname"><span class="pre">short_rate</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.types.data_types.ShortRateTarget" title="src.types.data_types.ShortRateTarget"><span class="pre">ShortRateTarget</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.types.data_types.MarketSnapshot.short_rate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.MarketSnapshot.bonds">
+<span class="sig-name descname"><span class="pre">bonds</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.types.data_types.BondTarget" title="src.types.data_types.BondTarget"><span class="pre">BondTarget</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.types.data_types.MarketSnapshot.bonds" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.MarketSnapshot.bonds_metadata">
+<span class="sig-name descname"><span class="pre">bonds_metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.types.data_types.BondFeatures" title="src.types.data_types.BondFeatures"><span class="pre">BondFeatures</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.types.data_types.MarketSnapshot.bonds_metadata" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.MarketSnapshot.futures">
+<span class="sig-name descname"><span class="pre">futures</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget" title="src.types.data_types.BatchedFuturesTarget"><span class="pre">BatchedFuturesTarget</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#src.types.data_types.MarketSnapshot.futures" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.data_types.MarketSnapshot.meta">
+<span class="sig-name descname"><span class="pre">meta</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.data_types.MarketSnapshot.meta" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function" id="module-src.types.types_utils">
+<dt class="sig sig-object py" id="src.types.types_utils.normalize_date">
+<span class="sig-prename descclassname"><span class="pre">src.types.types_utils.</span></span><span class="sig-name descname"><span class="pre">normalize_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/types_utils.html#normalize_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.types_utils.normalize_date" title="Link to this definition"></a></dt>
+<dd><p>Convert any accepted date type to a normalised pd.Timestamp.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>d</strong> (<em>Date</em>) – Date in any accepted form.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Timestamp normalised to midnight.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.Timestamp</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.types.types_utils.merge_single_future_targets">
+<span class="sig-prename descclassname"><span class="pre">src.types.types_utils.</span></span><span class="sig-name descname"><span class="pre">merge_single_future_targets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">targets</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/types_utils.html#merge_single_future_targets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.types_utils.merge_single_future_targets" title="Link to this definition"></a></dt>
+<dd><p>Merge a list of <cite>SingleFutureTarget</cite> (all at the same as-of date)
+into a single <cite>BatchedFuturesTarget</cite> using a flattened-ragged layout.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targets</strong> (<em>List</em><em>[</em><a class="reference internal" href="#src.types.data_types.SingleFutureTarget" title="src.types.data_types.SingleFutureTarget"><em>SingleFutureTarget</em></a><em>]</em>) – Non-empty list of single-future targets sharing the same <cite>date</cite>.</p></li>
+<li><p><strong>device</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensor_attributes.html#torch.device" title="(in PyTorch v2.12)"><em>torch.device</em></a><em>]</em>) – Device for the output tensors. Defaults to the device of
+<cite>targets[0].price</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Batched representation suitable for vectorised pricing.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#src.types.data_types.BatchedFuturesTarget" title="src.types.data_types.BatchedFuturesTarget">BatchedFuturesTarget</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>targets</cite> is empty, or any target has a different as-of date,
+    or basket / conversion-factor shapes are inconsistent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class" id="module-src.types.eval_results_types">
+<dt class="sig sig-object py" id="src.types.eval_results_types.EvalResults">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.eval_results_types.</span></span><span class="sig-name descname"><span class="pre">EvalResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/eval_results_types.html#EvalResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.eval_results_types.EvalResults" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Evaluation output for one date.</p>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>total_loss is a python float (safe to log/serialize)</p></li>
+<li><p>components is a dict of per-instrument loss scalars</p></li>
+<li><p>meta can store anything extra (e.g. n_paths used, warnings, etc.)</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></span>)</p></li>
+<li><p><strong>n_paths</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+<li><p><strong>total_loss</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
+<li><p><strong>components</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>)</p></li>
+<li><p><strong>meta</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.eval_results_types.EvalResults.date">
+<span class="sig-name descname"><span class="pre">date</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Timestamp</span></span><a class="headerlink" href="#src.types.eval_results_types.EvalResults.date" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.eval_results_types.EvalResults.n_paths">
+<span class="sig-name descname"><span class="pre">n_paths</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#src.types.eval_results_types.EvalResults.n_paths" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.eval_results_types.EvalResults.total_loss">
+<span class="sig-name descname"><span class="pre">total_loss</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.types.eval_results_types.EvalResults.total_loss" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.eval_results_types.EvalResults.components">
+<span class="sig-name descname"><span class="pre">components</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.eval_results_types.EvalResults.components" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.eval_results_types.EvalResults.meta">
+<span class="sig-name descname"><span class="pre">meta</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.eval_results_types.EvalResults.meta" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.types.eval_results_types.eval_results_to_frame">
+<span class="sig-prename descclassname"><span class="pre">src.types.eval_results_types.</span></span><span class="sig-name descname"><span class="pre">eval_results_to_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/eval_results_types.html#eval_results_to_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.eval_results_types.eval_results_to_frame" title="Link to this definition"></a></dt>
+<dd><p>Convert EvalResults or Sequence[EvalResults] into a flat DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>results</strong> (<a class="reference internal" href="#src.types.eval_results_types.EvalResults" title="src.types.eval_results_types.EvalResults"><em>EvalResults</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference internal" href="#src.types.eval_results_types.EvalResults" title="src.types.eval_results_types.EvalResults"><em>EvalResults</em></a><em>]</em>)</p>
+</dd>
+</dl>
+<section id="columns">
+<h2>Columns<a class="headerlink" href="#columns" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>date</p></li>
+<li><p>n_paths</p></li>
+<li><p>total_loss</p></li>
+<li><p>component/&lt;name&gt;   (flattened from EvalResults.components)</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">param results<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">type results<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="#src.types.eval_results_types.EvalResults" title="src.types.eval_results_types.EvalResults"><code class="xref py py-class docutils literal notranslate"><span class="pre">EvalResults</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference internal" href="#src.types.eval_results_types.EvalResults" title="src.types.eval_results_types.EvalResults"><code class="xref py py-class docutils literal notranslate"><span class="pre">EvalResults</span></code></a>]]</span></p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py class" id="module-src.types.gridsearch_types">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.TrialResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.gridsearch_types.</span></span><span class="sig-name descname"><span class="pre">TrialResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/gridsearch_types.html#TrialResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.gridsearch_types.TrialResult" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Result summary for one Optuna trial.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>number</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Trial number (Optuna assigned).</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Objective value returned by the evaluation routine.</p></li>
+<li><p><strong>params</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – <p>Parameter choices for this trial (flat dict using your dot-path keys).</p>
+<p>Note: values are DECODED back to the original python objects where applicable
+(e.g. dict configs for nsde.diffusion).</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>number</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>)</p></li>
+<li><p><strong>value</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
+<li><p><strong>params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.TrialResult.number">
+<span class="sig-name descname"><span class="pre">number</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#src.types.gridsearch_types.TrialResult.number" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.TrialResult.value">
+<span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.types.gridsearch_types.TrialResult.value" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.TrialResult.params">
+<span class="sig-name descname"><span class="pre">params</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.gridsearch_types.TrialResult.params" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.GridSearchResults">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.types.gridsearch_types.</span></span><span class="sig-name descname"><span class="pre">GridSearchResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">best_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trials</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/gridsearch_types.html#GridSearchResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.gridsearch_types.GridSearchResults" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Full grid-search output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>best_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Best objective value found.</p></li>
+<li><p><strong>best_params</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Parameters for the best trial (decoded).</p></li>
+<li><p><strong>trials</strong> (<em>List</em><em>[</em><a class="reference internal" href="#src.types.gridsearch_types.TrialResult" title="src.types.gridsearch_types.TrialResult"><em>TrialResult</em></a><em>]</em>) – One entry per completed trial (decoded).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>best_value</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>)</p></li>
+<li><p><strong>best_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>)</p></li>
+<li><p><strong>trials</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="#src.types.gridsearch_types.TrialResult" title="src.types.gridsearch_types.TrialResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrialResult</span></code></a>]</span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.GridSearchResults.best_value">
+<span class="sig-name descname"><span class="pre">best_value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#src.types.gridsearch_types.GridSearchResults.best_value" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.GridSearchResults.best_params">
+<span class="sig-name descname"><span class="pre">best_params</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.gridsearch_types.GridSearchResults.best_params" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.GridSearchResults.trials">
+<span class="sig-name descname"><span class="pre">trials</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#src.types.gridsearch_types.TrialResult" title="src.types.gridsearch_types.TrialResult"><span class="pre">TrialResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#src.types.gridsearch_types.GridSearchResults.trials" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.types.gridsearch_types.GridSearchResults.to_json">
+<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/types/gridsearch_types.html#GridSearchResults.to_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.types.gridsearch_types.GridSearchResults.to_json" title="Link to this definition"></a></dt>
+<dd><p>Serialize results to JSON (safe to write to disk).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="training.html" class="btn btn-neutral float-left" title="Training" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Imperial College Treasury Modelling Team.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

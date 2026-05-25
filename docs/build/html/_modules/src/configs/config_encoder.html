@@ -1,0 +1,796 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.configs.config_encoder &mdash; IRM2 — Neural Short-Rate Calibration</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=0bd0538f" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5e8b008d"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #1f3855" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            IRM2
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../overview.html#high-level-pipeline">High-level pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../overview.html#layer-responsibilities">Layer responsibilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../overview.html#where-to-put-things">Where to put things</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../install.html#runtime">Runtime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../install.html#building-the-docs">Building the docs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../install.html#running-the-tests">Running the tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../install.html#repository-layout">Repository layout</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../concepts/dataflow.html">Data flow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/dataflow.html#step-1-store-construction-once">Step 1 — store construction (once)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/dataflow.html#step-2-snapshot-per-date">Step 2 — snapshot per date</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts/dataflow.html#active-futures-filter">Active-futures filter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts/dataflow.html#bond-metadata">Bond metadata</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/dataflow.html#step-3-encoder-input">Step 3 — encoder input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/dataflow.html#step-4-model-forward">Step 4 — model forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/dataflow.html#step-5-pricing">Step 5 — pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/dataflow.html#step-6-loss">Step 6 — loss</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../concepts/types.html">Type contracts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/types.html#encoderinputs">EncoderInputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/types.html#yieldcurvetarget-shortratetarget">YieldCurveTarget / ShortRateTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/types.html#singlefuturetarget">SingleFutureTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/types.html#batchedfuturestarget">BatchedFuturesTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/types.html#bondfeatures">BondFeatures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/types.html#marketsnapshot">MarketSnapshot</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../concepts/pricing.html">Pricing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/pricing.html#yield-curve-pricing">Yield-curve pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/pricing.html#short-rate-observable">Short-rate observable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/pricing.html#futures-pricing-cheapest-to-deliver-mc">Futures pricing — cheapest-to-deliver MC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/pricing.html#no-look-ahead-alignment">No-look-ahead alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/pricing.html#year-fraction-convention">Year-fraction convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../concepts/training.html">Training loop</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/training.html#window-structure">Window structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts/training.html#per-window-batching">Per-window batching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts/training.html#nsde-solver-backend">NSDE solver backend</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/training.html#loss-composition">Loss composition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/training.html#amp-and-precision-policy">AMP and precision policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/training.html#reproducibility">Reproducibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/training.html#checkpoints">Checkpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/training.html#evaluation">Evaluation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/01_load_market_data.html">Example 1 — Loading and inspecting market data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/01_load_market_data.html#the-simplest-loader-yields-only">1.1 The simplest loader (yields only)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/01_load_market_data.html#inspect-a-single-snapshot">1.2 Inspect a single snapshot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/01_load_market_data.html#enable-futures-and-bond-metadata">1.3 Enable futures and bond metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/01_load_market_data.html#walking-the-calendar">1.4 Walking the calendar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/01_load_market_data.html#encoder-histories">1.5 Encoder histories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/01_load_market_data.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/02_build_and_train_model.html">Example 2 — Building and training a model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/02_build_and_train_model.html#imports-and-config">2.1 Imports and config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/02_build_and_train_model.html#data-encoder-nsde">2.2 Data + encoder + NSDE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/02_build_and_train_model.html#bondnet">2.3 BondNet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/02_build_and_train_model.html#model">2.4 Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/02_build_and_train_model.html#trainer">2.5 Trainer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/02_build_and_train_model.html#outputs">2.6 Outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/02_build_and_train_model.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/03_evaluate_and_inspect.html">Example 3 — Evaluation and inspection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/03_evaluate_and_inspect.html#evaluation">3.1 Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/03_evaluate_and_inspect.html#model-implied-observables-no-loss">3.2 Model-implied observables (no loss)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/03_evaluate_and_inspect.html#loss-trajectories">3.3 Loss trajectories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/03_evaluate_and_inspect.html#loading-a-saved-model-back">3.4 Loading a saved model back</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/03_evaluate_and_inspect.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/04_futures_pricing_walkthrough.html">Example 4 — Futures pricing, end-to-end</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/04_futures_pricing_walkthrough.html#build-the-pieces">4.1 Build the pieces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/04_futures_pricing_walkthrough.html#wire-up-the-model">4.2 Wire up the model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/04_futures_pricing_walkthrough.html#simulate-latent-paths">4.3 Simulate latent paths</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/04_futures_pricing_walkthrough.html#call-the-pricer">4.4 Call the pricer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/04_futures_pricing_walkthrough.html#what-just-happened-shape-by-shape">4.5 What just happened — shape-by-shape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/04_futures_pricing_walkthrough.html#sanity-check-the-ctd-reduction-by-hand">4.6 Sanity check the CTD reduction by hand</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/04_futures_pricing_walkthrough.html#what-to-remember">What to remember</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/05_gridsearch.html">Example 5 — Optuna grid search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#a-minimal-grid">5.1 A minimal grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#what-to-search">5.2 What to search</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../examples/05_gridsearch.html#tier-1-must-search">Tier 1 — must search</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../examples/05_gridsearch.html#tier-2-add-once-tier-1-settles">Tier 2 — add once Tier 1 settles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../examples/05_gridsearch.html#tier-3-set-and-forget">Tier 3 — set-and-forget</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../examples/05_gridsearch.html#do-not-grid">Do <strong>not</strong> grid</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/configs.html">Configs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.data_path"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.data_path</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.start_date"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.start_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.end_date"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.end_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.max_maturity"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.max_maturity</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.business_days_per_year"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.business_days_per_year</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_yield"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_yield</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_short_rate"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_bonds"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_bonds</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_futures"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.enable_options"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.enable_options</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.device"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.dtype"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_loader.DataLoaderCfg.validate"><code class="docutils literal notranslate"><span class="pre">DataLoaderCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg"><code class="docutils literal notranslate"><span class="pre">EncoderCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.mode"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.preprocess_mode"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.preprocess_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.out_norm"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.out_norm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.fast_net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.fast_net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.slow_net"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.slow_net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.combine"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.combine</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.validate"><code class="docutils literal notranslate"><span class="pre">EncoderCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg"><code class="docutils literal notranslate"><span class="pre">NSDECfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.type"><code class="docutils literal notranslate"><span class="pre">NSDECfg.type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.noise_type"><code class="docutils literal notranslate"><span class="pre">NSDECfg.noise_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.solver"><code class="docutils literal notranslate"><span class="pre">NSDECfg.solver</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.method"><code class="docutils literal notranslate"><span class="pre">NSDECfg.method</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.adjoint"><code class="docutils literal notranslate"><span class="pre">NSDECfg.adjoint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.rtol"><code class="docutils literal notranslate"><span class="pre">NSDECfg.rtol</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.atol"><code class="docutils literal notranslate"><span class="pre">NSDECfg.atol</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.dt"><code class="docutils literal notranslate"><span class="pre">NSDECfg.dt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.drift"><code class="docutils literal notranslate"><span class="pre">NSDECfg.drift</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.diffusion"><code class="docutils literal notranslate"><span class="pre">NSDECfg.diffusion</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.long_term_mean"><code class="docutils literal notranslate"><span class="pre">NSDECfg.long_term_mean</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.mean_reversion"><code class="docutils literal notranslate"><span class="pre">NSDECfg.mean_reversion</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_nsde.NSDECfg.validate"><code class="docutils literal notranslate"><span class="pre">NSDECfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.BaseBondNetCfg"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.latent_dim"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.latent_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.bond_feat_dim"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.bond_feat_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.activation"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.activation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.out_activation"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.out_activation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.dropout"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.dropout</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.BaseBondNetCfg.output_positive"><code class="docutils literal notranslate"><span class="pre">BaseBondNetCfg.output_positive</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.latent_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.latent_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.latent_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.latent_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.bond_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.bond_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.bond_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.bond_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.fusion_n_layers"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.fusion_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.SimpleBondNetCfg.fusion_n_units"><code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg.fusion_n_units</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.trunk_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.trunk_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.trunk_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.trunk_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.film_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.film_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.film_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.film_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.head_n_layers"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.head_n_layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.head_n_units"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.head_n_units</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.FiLMBondNetCfg.hidden_dim"><code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg.hidden_dim</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_bondnet.BondNetCfg"><code class="docutils literal notranslate"><span class="pre">BondNetCfg</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.OptimizerCfg"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.OptimizerCfg.name"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.OptimizerCfg.params"><code class="docutils literal notranslate"><span class="pre">OptimizerCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.SchedulerCfg"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.SchedulerCfg.name"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.SchedulerCfg.params"><code class="docutils literal notranslate"><span class="pre">SchedulerCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.LossCfg"><code class="docutils literal notranslate"><span class="pre">LossCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.LossCfg.name"><code class="docutils literal notranslate"><span class="pre">LossCfg.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.LossCfg.params"><code class="docutils literal notranslate"><span class="pre">LossCfg.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.CheckpointCfg"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.CheckpointCfg.mode"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.CheckpointCfg.save_best_only"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.save_best_only</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.CheckpointCfg.every_n_epochs"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.every_n_epochs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.CheckpointCfg.max_to_keep"><code class="docutils literal notranslate"><span class="pre">CheckpointCfg.max_to_keep</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.EarlyStoppingCfg"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.enabled"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.enabled</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.patience"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.patience</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.min_delta"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.min_delta</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.use_ema"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.use_ema</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.EarlyStoppingCfg.ema_alpha"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingCfg.ema_alpha</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg"><code class="docutils literal notranslate"><span class="pre">TrainerCfg</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.n_paths"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.n_paths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.batch_window"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.batch_window</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.window_step"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.window_step</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.dt"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.dt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.lookback"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_fast"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_fast</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_fast_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_fast_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_slow"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_slow</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.lookback_slow_freq"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.lookback_slow_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.optimizer"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.optimizer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.scheduler"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.scheduler</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.loss"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.use_amp"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.use_amp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.grad_clip_norm"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.grad_clip_norm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.accumulate_windows"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.accumulate_windows</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.compile_nsde"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.compile_nsde</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.seed"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.seed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.deterministic"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.deterministic</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.results_root"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.results_root</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.run_name"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.run_name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.debug"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.debug</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.checkpoint"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.checkpoint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.early_stopping"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.early_stopping</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.skip_nan_loss"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.skip_nan_loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.log_every_n_windows"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.log_every_n_windows</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/configs.html#src.configs.config_trainer.TrainerCfg.validate"><code class="docutils literal notranslate"><span class="pre">TrainerCfg.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/configs.html#required-key">Required key</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/dataloaders.html">Dataloaders</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.calendar.MarketCalendar"><code class="docutils literal notranslate"><span class="pre">MarketCalendar</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.dates"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.start_date"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.start_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.end_date"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.end_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.between"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.between()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.last_available_on_or_before"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.last_available_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.next_available_after"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.next_available_after()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.calendar.MarketCalendar.training_windows"><code class="docutils literal notranslate"><span class="pre">MarketCalendar.training_windows()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.data"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.max_maturity"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.max_maturity</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.device"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.dtype"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.from_csv"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.dates"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_curve_on_or_before"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_curve_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_curve"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_next_curve"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_next_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_maturities"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_maturities()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.yield_store.YieldCurveStore.get_encoder_history"><code class="docutils literal notranslate"><span class="pre">YieldCurveStore.get_encoder_history()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore"><code class="docutils literal notranslate"><span class="pre">ShortRateStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.data"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.device"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.dtype"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.from_csv"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_rate"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_rate_on_or_before"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_rate_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.short_rate_store.ShortRateStore.get_encoder_history"><code class="docutils literal notranslate"><span class="pre">ShortRateStore.get_encoder_history()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore"><code class="docutils literal notranslate"><span class="pre">FuturesStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.quotes_wide"><code class="docutils literal notranslate"><span class="pre">FuturesStore.quotes_wide</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.expirations"><code class="docutils literal notranslate"><span class="pre">FuturesStore.expirations</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.deliverables"><code class="docutils literal notranslate"><span class="pre">FuturesStore.deliverables</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.device"><code class="docutils literal notranslate"><span class="pre">FuturesStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.dtype"><code class="docutils literal notranslate"><span class="pre">FuturesStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.from_csv"><code class="docutils literal notranslate"><span class="pre">FuturesStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.dates"><code class="docutils literal notranslate"><span class="pre">FuturesStore.dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.tickers"><code class="docutils literal notranslate"><span class="pre">FuturesStore.tickers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_date_on_or_before"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_date_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_price_on_or_before"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_price_on_or_before()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_prices"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_prices()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_active_tickers"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_active_tickers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_futures_target"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_futures_target()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.futures_store.FuturesStore.get_batched_futures_target"><code class="docutils literal notranslate"><span class="pre">FuturesStore.get_batched_futures_target()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.data"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.business_days_per_year"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.business_days_per_year</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.device"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.dtype"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.from_csv"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.from_csv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.ids"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.get_metadata"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.get_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore.get_bond_features"><code class="docutils literal notranslate"><span class="pre">BondMetadataStore.get_bond_features()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.cfg"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.cfg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_dates_between"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_dates_between()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_last_available_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_last_available_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_next_available_yield_curve_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_next_available_yield_curve_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_available_yield_curve_date"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_available_yield_curve_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_batch_windows"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_batch_windows()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_histories"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_histories()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_history"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_history()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/dataloaders.html#src.dataloaders.market_loader.MarketDataLoader.get_snapshot"><code class="docutils literal notranslate"><span class="pre">MarketDataLoader.get_snapshot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel"><code class="docutils literal notranslate"><span class="pre">ShortRateModel</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.from_dicts"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.from_dicts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.encode"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.encode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.decode"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.decode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.simulate"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.simulate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.sample"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.sample()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.latent_dim"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.latent_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.noise_dim"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.noise_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.encoder_type"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.encoder_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.nsde_type"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.nsde_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.cache_training_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.cache_training_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.model_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.model_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.short_rate_model.ShortRateModel.save_model_info"><code class="docutils literal notranslate"><span class="pre">ShortRateModel.save_model_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.encoders.Encoder"><code class="docutils literal notranslate"><span class="pre">Encoder</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.encoders.Encoder.forward"><code class="docutils literal notranslate"><span class="pre">Encoder.forward()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.encoders.Encoder.latent_dim"><code class="docutils literal notranslate"><span class="pre">Encoder.latent_dim</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.nsde.BaseNSDE"><code class="docutils literal notranslate"><span class="pre">BaseNSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.nsde.BaseNSDE.f"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.nsde.BaseNSDE.g"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.g()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.nsde.BaseNSDE.forward"><code class="docutils literal notranslate"><span class="pre">BaseNSDE.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.nsde.Simple_NeuralSDE"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.nsde.Simple_NeuralSDE.f"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.nsde.Simple_NeuralSDE.g"><code class="docutils literal notranslate"><span class="pre">Simple_NeuralSDE.g()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.nsde.OU_NeuralSDE"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.nsde.OU_NeuralSDE.f"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE.f()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.nsde.OU_NeuralSDE.g"><code class="docutils literal notranslate"><span class="pre">OU_NeuralSDE.g()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.nsde.create_nsde_from_config"><code class="docutils literal notranslate"><span class="pre">create_nsde_from_config()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.bond_net.SimpleBondNet"><code class="docutils literal notranslate"><span class="pre">SimpleBondNet</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.bond_net.SimpleBondNet.forward"><code class="docutils literal notranslate"><span class="pre">SimpleBondNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.bond_net.FiLMBondNet"><code class="docutils literal notranslate"><span class="pre">FiLMBondNet</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.models.bond_net.FiLMBondNet.forward"><code class="docutils literal notranslate"><span class="pre">FiLMBondNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.bond_net.get_bond_net"><code class="docutils literal notranslate"><span class="pre">get_bond_net()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#src.models.bond_net.BondNet"><code class="docutils literal notranslate"><span class="pre">BondNet</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/models.html#module-src.nn.mlp">Backbone networks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.mlp.MLP"><code class="docutils literal notranslate"><span class="pre">MLP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.rnn.RNN"><code class="docutils literal notranslate"><span class="pre">RNN</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/models.html#src.nn.rnn.RNN.forward"><code class="docutils literal notranslate"><span class="pre">RNN.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.lstm.LSTM"><code class="docutils literal notranslate"><span class="pre">LSTM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/models.html#src.nn.lstm.LSTM.forward"><code class="docutils literal notranslate"><span class="pre">LSTM.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.gru.GRU"><code class="docutils literal notranslate"><span class="pre">GRU</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/models.html#src.nn.gru.GRU.forward"><code class="docutils literal notranslate"><span class="pre">GRU.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.mamba.MambaBlock"><code class="docutils literal notranslate"><span class="pre">MambaBlock</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/models.html#src.nn.mamba.MambaBlock.forward"><code class="docutils literal notranslate"><span class="pre">MambaBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.mamba.MambaEncoder"><code class="docutils literal notranslate"><span class="pre">MambaEncoder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/models.html#src.nn.mamba.MambaEncoder.forward"><code class="docutils literal notranslate"><span class="pre">MambaEncoder.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.affine.AffineNet"><code class="docutils literal notranslate"><span class="pre">AffineNet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/models.html#src.nn.affine.AffineNet.forward"><code class="docutils literal notranslate"><span class="pre">AffineNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.constant.ConstantNet"><code class="docutils literal notranslate"><span class="pre">ConstantNet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/models.html#src.nn.constant.ConstantNet.forward"><code class="docutils literal notranslate"><span class="pre">ConstantNet.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/models.html#src.nn.generator.create_network_from_config"><code class="docutils literal notranslate"><span class="pre">create_network_from_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/finance.html">Pricing (<code class="docutils literal notranslate"><span class="pre">src.finance</span></code>)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/finance.html#src.finance.pricer_v2.to_year_fraction"><code class="docutils literal notranslate"><span class="pre">to_year_fraction()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/finance.html#src.finance.pricer_v2.Pricer"><code class="docutils literal notranslate"><span class="pre">Pricer</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/finance.html#src.finance.pricer_v2.Pricer.price_zcb"><code class="docutils literal notranslate"><span class="pre">Pricer.price_zcb()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/finance.html#src.finance.pricer_v2.Pricer.price_yield_curve"><code class="docutils literal notranslate"><span class="pre">Pricer.price_yield_curve()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/finance.html#src.finance.pricer_v2.Pricer.price_short_rate"><code class="docutils literal notranslate"><span class="pre">Pricer.price_short_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/finance.html#src.finance.pricer_v2.Pricer.price_futures"><code class="docutils literal notranslate"><span class="pre">Pricer.price_futures()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/finance.html#src.finance.pricer_v2.Pricer.price_snapshot"><code class="docutils literal notranslate"><span class="pre">Pricer.price_snapshot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training.html">Training</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer"><code class="docutils literal notranslate"><span class="pre">Trainer</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.get_latent_representation_from_date"><code class="docutils literal notranslate"><span class="pre">Trainer.get_latent_representation_from_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.get_realisations_from_date"><code class="docutils literal notranslate"><span class="pre">Trainer.get_realisations_from_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.train"><code class="docutils literal notranslate"><span class="pre">Trainer.train()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.evaluate"><code class="docutils literal notranslate"><span class="pre">Trainer.evaluate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.evaluate_training_set"><code class="docutils literal notranslate"><span class="pre">Trainer.evaluate_training_set()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.compute_prices"><code class="docutils literal notranslate"><span class="pre">Trainer.compute_prices()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.record_training_info"><code class="docutils literal notranslate"><span class="pre">Trainer.record_training_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.record_finetune_info"><code class="docutils literal notranslate"><span class="pre">Trainer.record_finetune_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.trainer.Trainer.save_training_artifacts"><code class="docutils literal notranslate"><span class="pre">Trainer.save_training_artifacts()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training.html#src.training.train_utils.WarmupCosineScheduler"><code class="docutils literal notranslate"><span class="pre">WarmupCosineScheduler</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.train_utils.WarmupCosineScheduler.get_lr"><code class="docutils literal notranslate"><span class="pre">WarmupCosineScheduler.get_lr()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training.html#src.training.train_utils.build_optimizer"><code class="docutils literal notranslate"><span class="pre">build_optimizer()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training.html#src.training.train_utils.build_loss"><code class="docutils literal notranslate"><span class="pre">build_loss()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training.html#src.training.train_utils.build_scheduler"><code class="docutils literal notranslate"><span class="pre">build_scheduler()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training.html#src.training.loss.YieldCurveLoss"><code class="docutils literal notranslate"><span class="pre">YieldCurveLoss</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.loss.YieldCurveLoss.forward"><code class="docutils literal notranslate"><span class="pre">YieldCurveLoss.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/training.html#src.training.gridsearch.OptunaGridSearch"><code class="docutils literal notranslate"><span class="pre">OptunaGridSearch</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/training.html#src.training.gridsearch.OptunaGridSearch.run"><code class="docutils literal notranslate"><span class="pre">OptunaGridSearch.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/types.html">Types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.data_types.EncoderInputs"><code class="docutils literal notranslate"><span class="pre">EncoderInputs</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.EncoderInputs.curve_history"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.curve_history</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.EncoderInputs.short_rate"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.EncoderInputs.dates"><code class="docutils literal notranslate"><span class="pre">EncoderInputs.dates</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondFeatures"><code class="docutils literal notranslate"><span class="pre">BondFeatures</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondFeatures.ids"><code class="docutils literal notranslate"><span class="pre">BondFeatures.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondFeatures.features"><code class="docutils literal notranslate"><span class="pre">BondFeatures.features</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondFeatures.feature_names"><code class="docutils literal notranslate"><span class="pre">BondFeatures.feature_names</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondFeatures.asof_date"><code class="docutils literal notranslate"><span class="pre">BondFeatures.asof_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondFeatures.metadata"><code class="docutils literal notranslate"><span class="pre">BondFeatures.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.data_types.YieldCurveTarget"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.YieldCurveTarget.date"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.YieldCurveTarget.maturities"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.maturities</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.YieldCurveTarget.yields"><code class="docutils literal notranslate"><span class="pre">YieldCurveTarget.yields</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.data_types.ShortRateTarget"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.ShortRateTarget.date"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.ShortRateTarget.rate"><code class="docutils literal notranslate"><span class="pre">ShortRateTarget.rate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondTarget"><code class="docutils literal notranslate"><span class="pre">BondTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondTarget.ids"><code class="docutils literal notranslate"><span class="pre">BondTarget.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondTarget.prices"><code class="docutils literal notranslate"><span class="pre">BondTarget.prices</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BondTarget.metadata"><code class="docutils literal notranslate"><span class="pre">BondTarget.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget.id"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget.date"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget.price"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.price</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget.delivery_date"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.delivery_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget.deliverable_ids"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.deliverable_ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget.conversion_factors"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.conversion_factors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget.metadata"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.SingleFutureTarget.basket_size"><code class="docutils literal notranslate"><span class="pre">SingleFutureTarget.basket_size</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.ids"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.prices"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.prices</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.asof_date"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.asof_date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.delivery_dates"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.delivery_dates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.basket_lengths"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.basket_lengths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.conversion_factors_flat"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.conversion_factors_flat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.deliverable_ids_flat"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.deliverable_ids_flat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.metadata"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.n_futures"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.n_futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.total_deliverables"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.total_deliverables</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.split_conversion_factors"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.split_conversion_factors()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.BatchedFuturesTarget.split_deliverable_ids"><code class="docutils literal notranslate"><span class="pre">BatchedFuturesTarget.split_deliverable_ids()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.data_types.MarketSnapshot"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.MarketSnapshot.date"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.MarketSnapshot.yield_curve"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.yield_curve</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.MarketSnapshot.short_rate"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.short_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.MarketSnapshot.bonds"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.bonds</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.MarketSnapshot.bonds_metadata"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.bonds_metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.MarketSnapshot.futures"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.futures</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.data_types.MarketSnapshot.meta"><code class="docutils literal notranslate"><span class="pre">MarketSnapshot.meta</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.types_utils.normalize_date"><code class="docutils literal notranslate"><span class="pre">normalize_date()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.types_utils.merge_single_future_targets"><code class="docutils literal notranslate"><span class="pre">merge_single_future_targets()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.eval_results_types.EvalResults"><code class="docutils literal notranslate"><span class="pre">EvalResults</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.eval_results_types.EvalResults.date"><code class="docutils literal notranslate"><span class="pre">EvalResults.date</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.eval_results_types.EvalResults.n_paths"><code class="docutils literal notranslate"><span class="pre">EvalResults.n_paths</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.eval_results_types.EvalResults.total_loss"><code class="docutils literal notranslate"><span class="pre">EvalResults.total_loss</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.eval_results_types.EvalResults.components"><code class="docutils literal notranslate"><span class="pre">EvalResults.components</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.eval_results_types.EvalResults.meta"><code class="docutils literal notranslate"><span class="pre">EvalResults.meta</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.eval_results_types.eval_results_to_frame"><code class="docutils literal notranslate"><span class="pre">eval_results_to_frame()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.TrialResult"><code class="docutils literal notranslate"><span class="pre">TrialResult</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.TrialResult.number"><code class="docutils literal notranslate"><span class="pre">TrialResult.number</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.TrialResult.value"><code class="docutils literal notranslate"><span class="pre">TrialResult.value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.TrialResult.params"><code class="docutils literal notranslate"><span class="pre">TrialResult.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.GridSearchResults"><code class="docutils literal notranslate"><span class="pre">GridSearchResults</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.GridSearchResults.best_value"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.best_value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.GridSearchResults.best_params"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.best_params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.GridSearchResults.trials"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.trials</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/types.html#src.types.gridsearch_types.GridSearchResults.to_json"><code class="docutils literal notranslate"><span class="pre">GridSearchResults.to_json()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #1f3855" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IRM2</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.configs.config_encoder</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.configs.config_encoder</h1><div class="highlight"><pre>
+<span></span><span class="c1"># src/configs/config_encoder.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">freeze_dict</span>
+
+
+<span class="n">EncoderMode</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span> <span class="s2">&quot;hierarchical&quot;</span><span class="p">]</span>
+<span class="n">PreprocessMode</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;norm_z&#39;</span><span class="p">,</span> <span class="s1">&#39;norm_max&#39;</span><span class="p">]</span>
+<span class="n">CombineMethod</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;concat&#39;</span><span class="p">,</span> <span class="s1">&#39;project&#39;</span><span class="p">,</span> <span class="s1">&#39;add&#39;</span><span class="p">]</span>
+<span class="n">OutNorm</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;layernorm&#39;</span><span class="p">,</span> <span class="s1">&#39;rmsnorm&#39;</span><span class="p">,</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;None&#39;</span><span class="p">]</span>
+
+
+<span class="c1"># Change here to a better one</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_encoder_net</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="n">freeze_dict</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;lstm&#39;</span><span class="p">})</span>
+
+
+<div class="viewcode-block" id="EncoderCfg">
+<a class="viewcode-back" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EncoderCfg</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Encoder configuration.</span>
+
+<span class="sd">    The config is mode-driven:</span>
+<span class="sd">    - mode=&quot;simple&quot; uses `net` only</span>
+<span class="sd">    - mode=&quot;hierarchical&quot; uses `fast_net`, `slow_net`, and `combine`</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mode : Literal[&quot;simple&quot;,&quot;hierarchical&quot;]</span>
+<span class="sd">        Selects the encoder topology.</span>
+<span class="sd">    net : Optional[Mapping[str, Any]]</span>
+<span class="sd">        Backbone config for simple mode.</span>
+<span class="sd">    fast_net : Optional[Mapping[str, Any]]</span>
+<span class="sd">        Fast stream backbone config for hierarchical mode.</span>
+<span class="sd">    slow_net : Optional[Mapping[str, Any]]</span>
+<span class="sd">        Slow stream backbone config for hierarchical mode.</span>
+<span class="sd">    combine : CombineMethod</span>
+<span class="sd">        How to combine fast/slow embeddings in hierarchical mode.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Mode</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="n">EncoderMode</span> <span class="o">=</span> <span class="s2">&quot;simple&quot;</span>
+
+    <span class="c1"># Common options</span>
+    <span class="n">preprocess_mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PreprocessMode</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">out_norm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutNorm</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;layernorm&quot;</span>
+
+    <span class="c1"># Simple</span>
+    <span class="n">net</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Hierarchical</span>
+    <span class="n">fast_net</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">slow_net</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">combine</span><span class="p">:</span> <span class="n">CombineMethod</span> <span class="o">=</span> <span class="s2">&quot;concat&quot;</span>
+
+
+    <span class="c1"># -------------------------</span>
+    <span class="c1"># Validation</span>
+    <span class="c1"># -------------------------</span>
+
+<div class="viewcode-block" id="EncoderCfg.validate">
+<a class="viewcode-back" href="../../../api/configs.html#src.configs.config_encoder.EncoderCfg.validate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate and normalise the encoder config.</span>
+
+<span class="sd">        Call after all fields are set. This method:</span>
+<span class="sd">        - Lowercases mode</span>
+<span class="sd">        - Fills defaults for missing network configs</span>
+<span class="sd">        - Nullifies fields that don&#39;t apply to the selected mode (with warnings)</span>
+<span class="sd">        - Validates that network specs contain required keys</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span> <span class="s2">&quot;hierarchical&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown EncoderCfg.mode=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">&#39;. Expected &#39;simple&#39; or &#39;hierarchical&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_norm</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="s2">&quot;layernorm&quot;</span><span class="p">,</span> <span class="s2">&quot;rmsnorm&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid EncoderCfg.out_norm=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">out_norm</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;norm_z&#39;</span><span class="p">,</span> <span class="s1">&#39;norm_max&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid EncoderCfg.preprocess_mode=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">preprocess_mode</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
+            <span class="c1"># Fill defaults</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">_default_encoder_net</span><span class="p">()</span>
+
+            <span class="c1"># Conflicts: hierarchical fields provided -&gt; ignore with warning</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_net</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">slow_net</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;EncoderCfg(mode=&#39;simple&#39;): fast_net/slow_net were provided but will be ignored.&quot;</span><span class="p">,</span>
+                    <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">,</span>
+                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="c1"># Remove hierarchical-only fields. Note that `combine` is reset</span>
+            <span class="c1"># to None for simple mode — readers who introspect cfg.combine</span>
+            <span class="c1"># after validate() must accept None for the simple variant.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fast_net</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">slow_net</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combine</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Validate network spec</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_net_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;cfg.net&quot;</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;hierarchical&quot;</span><span class="p">:</span>
+            <span class="c1"># Fill defaults</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fast_net</span> <span class="o">=</span> <span class="n">_default_encoder_net</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">slow_net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">slow_net</span> <span class="o">=</span> <span class="n">_default_encoder_net</span><span class="p">()</span>
+
+            <span class="c1"># Conflicts: simple fields provided -&gt; ignore with warning</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;EncoderCfg(mode=&#39;hierarchical&#39;): net was provided but will be ignored.&quot;</span><span class="p">,</span>
+                    <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">,</span>
+                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Remove simple-only fields</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Validate combine method</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">combine</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;concat&quot;</span><span class="p">,</span> <span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="s2">&quot;project&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid EncoderCfg.combine=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">combine</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Validate network specs</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_net_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_net</span><span class="p">,</span> <span class="s2">&quot;cfg.fast_net&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_net_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slow_net</span><span class="p">,</span> <span class="s2">&quot;cfg.slow_net&quot;</span><span class="p">)</span></div>
+
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_net_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate that a network spec is a mapping with a supported &#39;type&#39; key.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must contain key &#39;type&#39; (e.g. </span><span class="se">{{</span><span class="s2">&#39;type&#39;: &#39;lstm&#39;</span><span class="se">}}</span><span class="s2">).&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;rnn&quot;</span><span class="p">,</span> <span class="s2">&quot;gru&quot;</span><span class="p">,</span> <span class="s2">&quot;lstm&quot;</span><span class="p">,</span> <span class="s2">&quot;mamba&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported network type &#39;</span><span class="si">{</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; in </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">. (Encoder does not support MLPs.)&quot;</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Imperial College Treasury Modelling Team.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

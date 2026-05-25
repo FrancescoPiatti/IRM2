@@ -1,0 +1,87 @@
+/* IRM2 — Sphinx custom styling.
+ *
+ * Modest typographic polish on top of sphinx_rtd_theme:
+ *  - wider content well so long lines breathe
+ *  - cleaner inline code + code-block contrast
+ *  - softer admonitions
+ *  - tightened table spacing
+ */
+
+/* Slightly wider main content well (RTD theme defaults to ~800px). */
+.wy-nav-content {
+    max-width: 1080px;
+}
+
+/* Inline code: monospace + subtle background, no funky orange. */
+.rst-content code.literal,
+.rst-content tt.literal {
+    background: #f5f5f5;
+    color: #1d4f8a;
+    border: 1px solid #e6e6e6;
+    padding: 0 .25em;
+    border-radius: 3px;
+    font-size: 0.92em;
+}
+
+/* Code blocks: a touch more contrast and breathing room. */
+.rst-content div[class^="highlight"] pre {
+    padding: 0.85em 1em;
+    line-height: 1.45;
+    background: #fafafa;
+    border-left: 3px solid #1f3855;
+    border-radius: 3px;
+    font-size: 0.92em;
+}
+
+/* Section heading separators — easier to scan long pages. */
+.rst-content h2,
+.rst-content h3 {
+    border-bottom: 1px solid #ececec;
+    padding-bottom: 0.25em;
+    margin-top: 1.6em;
+}
+.rst-content h4 {
+    margin-top: 1.3em;
+}
+
+/* Admonitions (.. note::, .. warning::, .. tip::, ...) — softer corners
+ * and a subtle drop shadow so they read as cards. */
+.rst-content .admonition,
+.rst-content .note,
+.rst-content .tip,
+.rst-content .warning,
+.rst-content .important {
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    border-left-width: 4px;
+}
+
+/* Tables — tighter padding, subtle row striping. */
+.rst-content table.docutils td,
+.rst-content table.docutils th {
+    padding: 0.45em 0.7em;
+}
+.rst-content table.docutils tr:nth-child(2n) td {
+    background: #fbfbfb;
+}
+
+/* The "On this page" right-side TOC (RTD theme provides one in some skins). */
+.rst-content .toctree-wrapper > p.caption,
+.rst-content .toctree-wrapper > ul {
+    margin-top: 0.5em;
+}
+
+/* Sidebar — a touch more line-height so nested entries don't crowd. */
+.wy-menu-vertical li a {
+    line-height: 1.35;
+    padding: 0.42em 1.5em;
+}
+.wy-menu-vertical li.current > a {
+    background: #f4f6f9;
+}
+
+/* The autodoc-generated ivar field list (from napoleon_use_ivar=True) gets a
+ * little more weight for the attribute name. */
+.rst-content dl.field-list > dt {
+    font-weight: 600;
+}

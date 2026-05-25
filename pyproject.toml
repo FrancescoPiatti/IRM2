@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "irm2"
+version = "0.1.0"
+description = "Risk-neutral neural short-rate calibration framework for Treasury curves and futures."
+readme = "CLAUDE.md"
+requires-python = ">=3.10"
+authors = [{ name = "Imperial College Treasury Modelling Team" }]
+license = { text = "Proprietary" }
+dependencies = [
+    "torch",
+    "torchsde",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "optuna",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=2.0",
+    "myst-parser>=2.0",
+    "sphinx-autodoc-typehints>=1.25",
+]
+test = ["pytest"]
+
+# We ship the package as the bare `src/` directory (so `import src` works
+# from anywhere inside the repository, just like the existing code expects).
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+    # The futures CSV emits a pandas pivot warning when there are duplicate
+    # (date, ticker) pairs — harmless for our data2/ corpus.
+    "ignore::FutureWarning",
+]

@@ -708,6 +708,15 @@ class Trainer:
             r0 = self._get_r0(date)
             realisations = self._decode(latent_repr, r0=r0)
 
+        # Promote autocast outputs back to float32 before the pricer / loss
+        # so the discount factor, CTD min, and final MSE all run in fp32
+        # — what project_description §15 calls for, and what `GradScaler`
+        # needs to see (otherwise ``scaler.scale(half_loss).backward()``
+        # raises "Found type Float but expected Half").
+        if self.use_amp:
+            realisations = realisations.float()
+            latent_repr  = latent_repr.float()
+
         # Compute loss via pricer + trainer loss composition (float32).
         day_loss, components = self._get_loss(
             realisation=realisations,

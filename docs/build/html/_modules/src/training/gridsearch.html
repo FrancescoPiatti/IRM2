@@ -152,6 +152,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#joint-yc-futures-grids">5.4 Joint YC + futures grids</a></li>
 </ul>
 </li>
 </ul>
@@ -693,6 +694,7 @@
         <span class="n">base_trainer_cfg</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">model_cls</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>   <span class="c1"># ShortRateModel class</span>
         <span class="n">trainer_cls</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="c1"># Trainer class</span>
+        <span class="n">base_bondnet_cfg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;minimize&quot;</span><span class="p">,</span>
         <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">study_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;optuna_grid&quot;</span><span class="p">,</span>
@@ -704,10 +706,12 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span> <span class="o">=</span> <span class="n">dataloader</span>
 
-        <span class="c1"># Configs</span>
+        <span class="c1"># Configs (math_review.md §8 — `base_bondnet_cfg` enables grid axes</span>
+        <span class="c1"># under the ``bondnet.*`` root for joint YC+futures training).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_encoder_cfg</span> <span class="o">=</span> <span class="n">base_encoder_cfg</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_nsde_cfg</span> <span class="o">=</span> <span class="n">base_nsde_cfg</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_trainer_cfg</span> <span class="o">=</span> <span class="n">base_trainer_cfg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_bondnet_cfg</span> <span class="o">=</span> <span class="n">base_bondnet_cfg</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model_cls</span> <span class="o">=</span> <span class="n">model_cls</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">trainer_cls</span> <span class="o">=</span> <span class="n">trainer_cls</span>
@@ -837,6 +841,10 @@
             <span class="n">enc_cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clone_cfg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_encoder_cfg</span><span class="p">)</span>
             <span class="n">nsde_cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clone_cfg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_nsde_cfg</span><span class="p">)</span>
             <span class="n">tr_cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clone_cfg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_trainer_cfg</span><span class="p">)</span>
+            <span class="n">bondnet_cfg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_clone_cfg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_bondnet_cfg</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_bondnet_cfg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
 
             <span class="c1"># Model init kwargs routed from &quot;model.*&quot;</span>
             <span class="n">model_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -846,7 +854,7 @@
                 <span class="n">choices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_grid</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
                 <span class="n">raw_val</span> <span class="o">=</span> <span class="n">trial</span><span class="o">.</span><span class="n">suggest_categorical</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">choices</span><span class="p">)</span>
                 <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decode_value</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">raw_val</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_apply_choice</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">enc_cfg</span><span class="p">,</span> <span class="n">nsde_cfg</span><span class="p">,</span> <span class="n">tr_cfg</span><span class="p">,</span> <span class="n">model_kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_apply_choice</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">enc_cfg</span><span class="p">,</span> <span class="n">nsde_cfg</span><span class="p">,</span> <span class="n">tr_cfg</span><span class="p">,</span> <span class="n">model_kwargs</span><span class="p">,</span> <span class="n">bondnet_cfg</span><span class="p">)</span>
 
             <span class="c1"># Force all trials into the same shared grid folder naming convention</span>
             <span class="n">tr_cfg</span><span class="o">.</span><span class="n">run_name</span> <span class="o">=</span> <span class="n">grid_run_name</span>
@@ -872,13 +880,23 @@
                     <span class="n">fallback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_default_noise_dim</span><span class="p">,</span>
     <span class="p">)</span>
 
-            <span class="c1"># Build model + trainer</span>
+            <span class="c1"># Build model + trainer.</span>
+            <span class="c1"># If a base BondNet config was supplied, propagate it AND keep</span>
+            <span class="c1"># ``bondnet.latent_dim`` in sync with the per-trial choice</span>
+            <span class="c1"># (math_review.md §8).</span>
+            <span class="n">model_extra</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">bondnet_cfg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">bondnet_cfg</span><span class="p">,</span> <span class="s2">&quot;latent_dim&quot;</span><span class="p">):</span>
+                    <span class="n">bondnet_cfg</span><span class="o">.</span><span class="n">latent_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">)</span>
+                <span class="n">model_extra</span><span class="p">[</span><span class="s2">&quot;bondnet&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bondnet_cfg</span>
+
             <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_cls</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">tr_cfg</span><span class="p">,</span> <span class="s2">&quot;run_name&quot;</span><span class="p">,</span> <span class="n">grid_run_name</span><span class="p">)),</span>
                 <span class="n">encoder</span><span class="o">=</span><span class="n">enc_cfg</span><span class="p">,</span>
                 <span class="n">nsde</span><span class="o">=</span><span class="n">nsde_cfg</span><span class="p">,</span>
                 <span class="n">latent_dim</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">),</span>
                 <span class="n">noise_dim</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">noise_dim</span><span class="p">),</span>
+                <span class="o">**</span><span class="n">model_extra</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="c1"># IMPORTANT: pass optuna_trial so Trainer can enable pruning + disable IO</span>
@@ -1129,6 +1147,7 @@
         <span class="n">nsde_cfg</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">trainer_cfg</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">model_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">bondnet_cfg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">parts</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
@@ -1164,6 +1183,21 @@
                 <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
                 <span class="n">allow_mapping_traversal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">context</span><span class="o">=</span><span class="s2">&quot;trainer&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">root</span> <span class="o">==</span> <span class="s2">&quot;bondnet&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bondnet_cfg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Grid key &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39; references the bondnet config but no &quot;</span>
+                    <span class="s2">&quot;base_bondnet_cfg was passed to OptunaGridSearch.&quot;</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_attr_path</span><span class="p">(</span>
+                <span class="n">obj</span><span class="o">=</span><span class="n">bondnet_cfg</span><span class="p">,</span>
+                <span class="n">parts</span><span class="o">=</span><span class="n">rest</span><span class="p">,</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                <span class="n">allow_mapping_traversal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">context</span><span class="o">=</span><span class="s2">&quot;bondnet&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span>
 

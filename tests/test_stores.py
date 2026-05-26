@@ -31,6 +31,9 @@ def test_yield_store_loads(data_path, small_date_range):
     curve = store.get_curve(store.dates[0])
     assert curve.shape == (10,)
     assert curve.dtype == torch.float32
+    # Values are returned in DECIMAL (post math_review.md §1). A US
+    # Treasury yield in the modern era sits comfortably in (-0.01, 0.20).
+    assert torch.all((curve > -0.01) & (curve < 0.20))
 
 
 def test_yield_store_get_curve_off_calendar_raises(data_path, small_date_range):

@@ -152,6 +152,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#joint-yc-futures-grids">5.4 Joint YC + futures grids</a></li>
 </ul>
 </li>
 </ul>
@@ -628,6 +629,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..types.data_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">BondFeatures</span>
 
 
+<span class="c1"># Calendar-day basis used to convert (maturity_date - asof_date).days into</span>
+<span class="c1"># a year fraction. This matches the yield-curve maturity convention</span>
+<span class="c1"># (SVENY01 = 1 calendar-year zero), so a 1-calendar-year bond yields</span>
+<span class="c1"># years_to_maturity = 1.0 in the BondNet features.</span>
+<span class="n">_CALENDAR_DAYS_PER_YEAR</span> <span class="o">=</span> <span class="mf">365.25</span>
+
+
 <div class="viewcode-block" id="BondMetadataStore">
 <a class="viewcode-back" href="../../../api/dataloaders.html#src.dataloaders.bond_metadata_store.BondMetadataStore">[docs]</a>
 <span class="nd">@dataclass</span>
@@ -733,7 +741,12 @@
             <span class="p">}</span>
         <span class="p">)</span>
 
-        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;coupon_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;coupon_rate&quot;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="c1"># CSV coupon_rate is in PERCENT (e.g. 2.25 means 2.25%/yr). Convert</span>
+        <span class="c1"># to DECIMAL so it matches the rate / yield convention used by the</span>
+        <span class="c1"># rest of the stack after math_review.md §1.</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;coupon_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;coupon_rate&quot;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">/</span> <span class="mf">100.0</span>
+        <span class="p">)</span>
         <span class="n">df</span><span class="p">[</span><span class="s2">&quot;coupon_frequency&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;coupon_frequency&quot;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
 
         <span class="c1"># Enforce current assumptions</span>
@@ -799,7 +812,12 @@
         <span class="n">coupon</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;coupon_rate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="n">freq</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;coupon_frequency&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
-        <span class="n">years_to_maturity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">maturity_ord</span> <span class="o">-</span> <span class="n">asof_ord</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">business_days_per_year</span>
+        <span class="c1"># Compute years_to_maturity in CALENDAR years so the bond feature is</span>
+        <span class="c1"># on the same scale as the yield-curve maturities (a 1-calendar-year</span>
+        <span class="c1"># bond yields a feature value of 1.0). `business_days_per_year` is</span>
+        <span class="c1"># preserved on the store for naming / future use, but the actual</span>
+        <span class="c1"># year-fraction computation uses calendar days (math_review.md §2).</span>
+        <span class="n">years_to_maturity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">maturity_ord</span> <span class="o">-</span> <span class="n">asof_ord</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">_CALENDAR_DAYS_PER_YEAR</span>
 
         <span class="c1"># Approximate coupon-cycle features from ytm and frequency only</span>
         <span class="n">u</span> <span class="o">=</span> <span class="n">years_to_maturity</span> <span class="o">*</span> <span class="n">freq</span>                           <span class="c1"># ~ remaining coupon periods</span>
@@ -814,7 +832,10 @@
         <span class="n">accrued_fraction</span> <span class="o">=</span> <span class="p">(</span><span class="n">years_from_last_coupon</span> <span class="o">/</span> <span class="n">period_years</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="n">accrued_fraction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">accrued_fraction</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
 
-        <span class="n">accrued_interest_per_100</span> <span class="o">=</span> <span class="p">(</span><span class="n">accrued_fraction</span> <span class="o">*</span> <span class="p">(</span><span class="n">coupon</span> <span class="o">/</span> <span class="n">freq</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="c1"># Accrued interest as a fraction of face value, in DECIMAL (matches</span>
+        <span class="c1"># coupon_rate&#39;s units). The legacy name was &quot;accrued_interest_per_100&quot;</span>
+        <span class="c1"># but with coupon now in decimal the value is no longer per-100.</span>
+        <span class="n">accrued_interest</span> <span class="o">=</span> <span class="p">(</span><span class="n">accrued_fraction</span> <span class="o">*</span> <span class="p">(</span><span class="n">coupon</span> <span class="o">/</span> <span class="n">freq</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
         <span class="n">feats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span>
             <span class="p">[</span>
@@ -825,7 +846,7 @@
                 <span class="n">freq</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
                 <span class="n">remaining_coupon_count</span><span class="p">,</span>
                 <span class="n">accrued_fraction</span><span class="p">,</span>
-                <span class="n">accrued_interest_per_100</span><span class="p">,</span>
+                <span class="n">accrued_interest</span><span class="p">,</span>
             <span class="p">]</span>
         <span class="p">)</span>
 
@@ -837,7 +858,7 @@
             <span class="s2">&quot;coupon_frequency&quot;</span><span class="p">,</span>
             <span class="s2">&quot;remaining_coupon_count&quot;</span><span class="p">,</span>
             <span class="s2">&quot;accrued_fraction&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;accrued_interest_per_100&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;accrued_interest&quot;</span><span class="p">,</span>
         <span class="p">]</span>
 
         <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">feats</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">out_dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span> <span class="k">if</span> <span class="n">to_torch</span> <span class="k">else</span> <span class="n">feats</span>

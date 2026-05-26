@@ -78,7 +78,7 @@ Row `i` of `features` describes bond `ids[i]`. Currently 8 features:
 | 4 | `coupon_frequency` | per year |
 | 5 | `remaining_coupon_count` | ceil(ytm * frequency) |
 | 6 | `accrued_fraction` | in [0, 1] |
-| 7 | `accrued_interest_per_100` | per 100 face |
+| 7 | `accrued_interest` | accrued interest as a fraction of face (decimal) |
 
 ## MarketSnapshot
 

@@ -155,6 +155,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#joint-yc-futures-grids">5.4 Joint YC + futures grids</a></li>
 </ul>
 </li>
 </ul>
@@ -820,12 +821,56 @@ are data choices, not hyperparameters.</p></li>
 <td><p>flat: <code class="docutils literal notranslate"><span class="pre">nsde.type</span></code>, <code class="docutils literal notranslate"><span class="pre">nsde.solver</span></code>, <code class="docutils literal notranslate"><span class="pre">nsde.diffusion</span></code></p></td>
 <td><p>Same rule: replace whole mappings.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">trainer.</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bondnet.</span></code></p></td>
+<td><p>flat: <code class="docutils literal notranslate"><span class="pre">bondnet.fusion_n_units</span></code>, <code class="docutils literal notranslate"><span class="pre">bondnet.hidden_dim</span></code></p></td>
+<td><p>Requires <code class="docutils literal notranslate"><span class="pre">base_bondnet_cfg</span></code>. <code class="docutils literal notranslate"><span class="pre">bondnet.latent_dim</span></code> is <strong>set automatically</strong> to match the trial’s <code class="docutils literal notranslate"><span class="pre">model.latent_dim</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">trainer.</span></code></p></td>
 <td><p>dot-path: <code class="docutils literal notranslate"><span class="pre">trainer.optimizer.params.lr</span></code>, <code class="docutils literal notranslate"><span class="pre">trainer.scheduler.params.step_size</span></code></p></td>
 <td><p>Deep mapping edits <strong>are</strong> allowed.</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="joint-yc-futures-grids">
+<h2>5.4 Joint YC + futures grids<a class="headerlink" href="#joint-yc-futures-grids" title="Link to this heading"></a></h2>
+<p>For the joint setting, pass a <code class="docutils literal notranslate"><span class="pre">SimpleBondNetCfg</span></code> (or <code class="docutils literal notranslate"><span class="pre">FiLMBondNetCfg</span></code>)
+as <code class="docutils literal notranslate"><span class="pre">base_bondnet_cfg</span></code>. The gridsearch overwrites
+<code class="docutils literal notranslate"><span class="pre">bondnet.latent_dim</span></code> per trial so it always matches the trial’s
+<code class="docutils literal notranslate"><span class="pre">model.latent_dim</span></code> — you do <strong>not</strong> need to grid them together.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleBondNetCfg</span>
+
+<span class="n">base_bondnet</span> <span class="o">=</span> <span class="n">SimpleBondNetCfg</span><span class="p">(</span>
+    <span class="n">latent_dim</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>                       <span class="c1"># overwritten per trial</span>
+    <span class="n">bond_feat_dim</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">latent_n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">latent_n_units</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+    <span class="n">bond_n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>   <span class="n">bond_n_units</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">fusion_n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fusion_n_units</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+    <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;silu&quot;</span><span class="p">,</span>
+    <span class="n">output_positive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">search</span> <span class="o">=</span> <span class="n">OptunaGridSearch</span><span class="p">(</span>
+    <span class="n">param_grid</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;model.latent_dim&quot;</span><span class="p">:</span>     <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
+        <span class="s2">&quot;nsde.type&quot;</span><span class="p">:</span>            <span class="p">[</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span> <span class="s2">&quot;ou&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;bondnet.fusion_n_units&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">dataloader</span><span class="o">=</span><span class="n">dl</span><span class="p">,</span>
+    <span class="n">base_encoder_cfg</span><span class="o">=</span><span class="n">base_enc</span><span class="p">,</span>
+    <span class="n">base_nsde_cfg</span><span class="o">=</span><span class="n">base_nsde</span><span class="p">,</span>
+    <span class="n">base_trainer_cfg</span><span class="o">=</span><span class="n">base_tr</span><span class="p">,</span>
+    <span class="n">base_bondnet_cfg</span><span class="o">=</span><span class="n">base_bondnet</span><span class="p">,</span>
+    <span class="n">model_cls</span><span class="o">=</span><span class="n">ShortRateModel</span><span class="p">,</span>
+    <span class="n">trainer_cls</span><span class="o">=</span><span class="n">Trainer</span><span class="p">,</span>
+    <span class="n">direction</span><span class="o">=</span><span class="s2">&quot;minimize&quot;</span><span class="p">,</span>
+    <span class="n">study_name</span><span class="o">=</span><span class="s2">&quot;YCFut_tier1&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>A ready-to-run version (10-year window, warmup-cosine, custom_euler)
+lives at
+<code class="docutils literal notranslate"><span class="pre">experiments_fra/gridsearch_experiments_on_YC_and_futures/grid_YCFut_tier1.py</span></code>.</p>
 </section>
 </section>
 

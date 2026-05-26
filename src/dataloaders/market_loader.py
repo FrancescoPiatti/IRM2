@@ -199,19 +199,35 @@ class MarketDataLoader:
         """
         return self.calendar.last_available_on_or_before(date)
 
-    def _check_valid_start_date(self, date: Optional[Date], lookback: int) -> pd.Timestamp:
+    def _check_valid_start_date(
+        self,
+        date: Optional[Date],
+        lookback: int,
+        frequency: int = 1,
+    ) -> pd.Timestamp:
         """
         Ensure the requested start date is valid given the encoder lookback.
 
-        The earliest valid start date is the calendar date `lookback` positions
-        after `calendar.start_date` — i.e. we step ``lookback`` business days
-        forward along the canonical calendar (not ``lookback`` calendar days).
-        If `date` is None, the minimum-valid date is returned.
+        The encoder needs ``lookback × frequency`` historical rows of the
+        canonical calendar to produce the first window, so the earliest
+        valid date is the (lookback × frequency)-th entry of the calendar.
+
+        Parameters
+        ----------
+        date : Optional[Date]
+            Requested start date. If None, returns the minimum valid date.
+        lookback : int
+            Number of rows the encoder consumes.
+        frequency : int
+            Subsampling stride inside the lookback (``lookback_freq``).
+            Defaults to 1 for back-compat (math_review.md §5).
         """
         _check_positive_integer_value(lookback, 'lookback')
+        _check_positive_integer_value(frequency, 'frequency')
 
         dates = self.calendar.dates
-        lb = min(int(lookback), len(dates) - 1)
+        effective = int(lookback) * int(frequency)
+        lb = min(effective, len(dates) - 1)
         min_valid = pd.Timestamp(dates[lb])
 
         if date is None:

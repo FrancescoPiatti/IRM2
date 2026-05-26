@@ -152,6 +152,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#joint-yc-futures-grids">5.4 Joint YC + futures grids</a></li>
 </ul>
 </li>
 </ul>
@@ -1552,11 +1553,17 @@
         <span class="n">_check_positive_integer_value</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">,</span> <span class="s1">&#39;num_epochs&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 
-        <span class="c1"># Adjust start date based on lookback</span>
+        <span class="c1"># Adjust start date based on lookback (and its stride — the encoder</span>
+        <span class="c1"># needs ``lookback × lookback_freq`` historical rows for the first</span>
+        <span class="c1"># window). For hierarchical encoders, slow lookback dominates.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoder_type</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
-            <span class="n">start_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span><span class="o">.</span><span class="n">_check_valid_start_date</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookback</span><span class="p">)</span>
+            <span class="n">start_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span><span class="o">.</span><span class="n">_check_valid_start_date</span><span class="p">(</span>
+                <span class="n">start_date</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookback</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lookback_freq</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">start_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span><span class="o">.</span><span class="n">_check_valid_start_date</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookback_slow</span><span class="p">)</span>
+            <span class="n">start_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span><span class="o">.</span><span class="n">_check_valid_start_date</span><span class="p">(</span>
+                <span class="n">start_date</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookback_slow</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lookback_slow_freq</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># Check valid date range</span>
         <span class="k">if</span> <span class="n">start_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">end_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

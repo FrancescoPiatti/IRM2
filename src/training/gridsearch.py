@@ -73,6 +73,7 @@ class OptunaGridSearch:
         base_trainer_cfg: Any,
         model_cls: Any,   # ShortRateModel class
         trainer_cls: Any, # Trainer class
+        base_bondnet_cfg: Optional[Any] = None,
         direction: str = "minimize",
         seed: Optional[int] = 0,
         study_name: str = "optuna_grid",
@@ -84,10 +85,12 @@ class OptunaGridSearch:
 
         self.dataloader = dataloader
 
-        # Configs
+        # Configs (math_review.md §8 — `base_bondnet_cfg` enables grid axes
+        # under the ``bondnet.*`` root for joint YC+futures training).
         self.base_encoder_cfg = base_encoder_cfg
         self.base_nsde_cfg = base_nsde_cfg
         self.base_trainer_cfg = base_trainer_cfg
+        self.base_bondnet_cfg = base_bondnet_cfg
 
         self.model_cls = model_cls
         self.trainer_cls = trainer_cls
@@ -215,6 +218,10 @@ class OptunaGridSearch:
             enc_cfg = self._clone_cfg(self.base_encoder_cfg)
             nsde_cfg = self._clone_cfg(self.base_nsde_cfg)
             tr_cfg = self._clone_cfg(self.base_trainer_cfg)
+            bondnet_cfg = (
+                self._clone_cfg(self.base_bondnet_cfg)
+                if self.base_bondnet_cfg is not None else None
+            )
 
             # Model init kwargs routed from "model.*"
             model_kwargs: Dict[str, Any] = {}
@@ -224,7 +231,7 @@ class OptunaGridSearch:
                 choices = self.param_grid[key]
                 raw_val = trial.suggest_categorical(key, choices)
                 val = self._decode_value(key, raw_val)
-                self._apply_choice(key, val, enc_cfg, nsde_cfg, tr_cfg, model_kwargs)
+                self._apply_choice(key, val, enc_cfg, nsde_cfg, tr_cfg, model_kwargs, bondnet_cfg)
 
             # Force all trials into the same shared grid folder naming convention
             tr_cfg.run_name = grid_run_name
@@ -250,13 +257,23 @@ class OptunaGridSearch:
                     fallback=self._default_noise_dim,
     )
 
-            # Build model + trainer
+            # Build model + trainer.
+            # If a base BondNet config was supplied, propagate it AND keep
+            # ``bondnet.latent_dim`` in sync with the per-trial choice
+            # (math_review.md §8).
+            model_extra: Dict[str, Any] = {}
+            if bondnet_cfg is not None:
+                if hasattr(bondnet_cfg, "latent_dim"):
+                    bondnet_cfg.latent_dim = int(latent_dim)
+                model_extra["bondnet"] = bondnet_cfg
+
             model = self.model_cls(
                 name=str(getattr(tr_cfg, "run_name", grid_run_name)),
                 encoder=enc_cfg,
                 nsde=nsde_cfg,
                 latent_dim=int(latent_dim),
                 noise_dim=int(noise_dim),
+                **model_extra,
             )
 
             # IMPORTANT: pass optuna_trial so Trainer can enable pruning + disable IO
@@ -506,6 +523,7 @@ class OptunaGridSearch:
         nsde_cfg: Any,
         trainer_cfg: Any,
         model_kwargs: Dict[str, Any],
+        bondnet_cfg: Optional[Any] = None,
     ) -> None:
         parts = str(path).split(".")
         if len(parts) < 2:
@@ -541,6 +559,21 @@ class OptunaGridSearch:
                 value=value,
                 allow_mapping_traversal=True,
                 context="trainer",
+            )
+            return
+
+        if root == "bondnet":
+            if bondnet_cfg is None:
+                raise ValueError(
+                    f"Grid key '{path}' references the bondnet config but no "
+                    "base_bondnet_cfg was passed to OptunaGridSearch."
+                )
+            self._set_attr_path(
+                obj=bondnet_cfg,
+                parts=rest,
+                value=value,
+                allow_mapping_traversal=False,
+                context="bondnet",
             )
             return
 

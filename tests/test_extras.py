@@ -146,6 +146,26 @@ def test_nsde_accepts_per_path_z0_and_rejects_wrong_batch():
         _ = nsde(ts, z0_wrong, n_paths=10)
 
 
+def test_pack_tz_resets_cache_on_dtype_change():
+    """Regression test for math_review.md §14 — the time-column cache must
+    be rebuilt when `z`'s dtype changes (e.g. when entering / leaving
+    ``torch.amp.autocast``). Otherwise we'd silently mix fp32 and bf16."""
+    nsde = Simple_NeuralSDE(latent_dim=4)
+
+    z_fp32 = torch.randn(8, 4, dtype=torch.float32)
+    out_a = nsde._pack_tz(0.5, z_fp32)
+    assert out_a.dtype == torch.float32
+
+    z_bf16 = torch.randn(8, 4, dtype=torch.bfloat16)
+    out_b = nsde._pack_tz(0.5, z_bf16)
+    assert out_b.dtype == torch.bfloat16
+    assert nsde._t_col.dtype == torch.bfloat16
+
+    out_c = nsde._pack_tz(0.5, z_fp32)
+    assert out_c.dtype == torch.float32
+    assert nsde._t_col.dtype == torch.float32
+
+
 # ---------------------------------------------------------------------------
 # Configs — conflicting-fields warnings + default-network immutability
 # ---------------------------------------------------------------------------
@@ -171,7 +191,9 @@ def test_encoder_cfg_conflicting_fields_warn():
     assert cfg.fast_net is None and cfg.slow_net is None and cfg.combine is None
 
 
-def test_nsde_cfg_conflicting_fields_warn():
+def test_nsde_cfg_drops_fields_for_wrong_type_silently():
+    # Used to warn; now silent (math_review.md §6) — the gridsearch
+    # routinely flips nsde.type and a populated base would spam warnings.
     cfg = NSDECfg(
         type="simple",
         drift={"type": "mlp"},
@@ -179,8 +201,7 @@ def test_nsde_cfg_conflicting_fields_warn():
         long_term_mean={"type": "mlp"},
         mean_reversion={"type": "mlp"},
     )
-    with pytest.warns(UserWarning):
-        cfg.validate()
+    cfg.validate()
     # OU fields are nulled out
     assert cfg.long_term_mean is None and cfg.mean_reversion is None
 

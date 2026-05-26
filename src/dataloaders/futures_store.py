@@ -93,6 +93,10 @@ class FuturesStore:
             q = q[q["Date"] <= pd.Timestamp(end_date)]
 
         q = q.sort_values(["Date", "Ticker"])
+        # Defensive: a duplicate (Date, Ticker) row would crash ``pivot``
+        # with an unhelpful message. Keep the last occurrence per pair
+        # (math_review.md §10).
+        q = q.drop_duplicates(subset=["Date", "Ticker"], keep="last")
         quotes_wide = q.pivot(index="Date", columns="Ticker", values="Price").sort_index()
 
         # ------------------------------------------------------------
@@ -210,7 +214,7 @@ class FuturesStore:
         date: Date,
         *,
         max_delivery_years: Optional[float] = None,
-        business_days_per_year: float = 252.0,
+        business_days_per_year: float = 252.0,    # accepted for back-compat
     ) -> List[str]:
         """
         Return the tickers considered active on `date`.
@@ -219,7 +223,12 @@ class FuturesStore:
           - it has a non-NaN quote on `date`, and
           - its `DLV_Date` is strictly after `date`, and
           - if `max_delivery_years` is provided: `DLV_Date - date <= max_delivery_years`
-            (delivery within the simulation horizon).
+            (delivery within the simulation horizon), measured in
+            **calendar years** to match the yield-curve convention
+            (math_review.md §2).
+
+        ``business_days_per_year`` is kept on the signature for back-compat
+        but is not used in the horizon filter.
 
         Parameters
         ----------
@@ -227,11 +236,9 @@ class FuturesStore:
             As-of date.
         max_delivery_years : Optional[float]
             If provided, drops contracts whose delivery date lies beyond this
-            horizon. The horizon is interpreted in years using
-            `business_days_per_year`.
+            horizon (calendar years).
         business_days_per_year : float
-            Year-fraction convention used to compare against
-            `max_delivery_years` (default 252.0).
+            Ignored. Kept on the signature so old callers don't break.
 
         Returns
         -------
@@ -254,9 +261,9 @@ class FuturesStore:
             if dlv <= ts:
                 continue
             if max_delivery_years is not None:
-                # Use business-day delta to match BondMetadataStore convention.
+                # Calendar-day delta -> calendar-year fraction (365.25 d/yr).
                 days = (dlv - ts).days
-                years = days / float(business_days_per_year)
+                years = days / 365.25
                 if years > float(max_delivery_years):
                     continue
             active.append(t)

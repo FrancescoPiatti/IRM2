@@ -48,7 +48,11 @@ class ShortRateStore:
         )
         df.index = pd.to_datetime(df.index, errors="raise").normalize()
 
-        
+        # CSV values are in PERCENT (e.g. DFF=5.43 means a 5.43% rate). The
+        # rest of the stack — pricer, decoder anchor, encoder — expects rates
+        # in DECIMAL, so we convert once here (math_review.md §1).
+        df = df / 100.0
+
         # (There shouldn't be any na, but still)
         df.dropna(how="all", inplace=True)
 

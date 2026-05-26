@@ -10,6 +10,13 @@ from ..types.types_utils import Date
 from ..types.data_types import BondFeatures
 
 
+# Calendar-day basis used to convert (maturity_date - asof_date).days into
+# a year fraction. This matches the yield-curve maturity convention
+# (SVENY01 = 1 calendar-year zero), so a 1-calendar-year bond yields
+# years_to_maturity = 1.0 in the BondNet features.
+_CALENDAR_DAYS_PER_YEAR = 365.25
+
+
 @dataclass
 class BondMetadataStore:
     """
@@ -110,7 +117,12 @@ class BondMetadataStore:
             }
         )
 
-        df["coupon_rate"] = pd.to_numeric(df["coupon_rate"], errors="raise").astype(np.float32)
+        # CSV coupon_rate is in PERCENT (e.g. 2.25 means 2.25%/yr). Convert
+        # to DECIMAL so it matches the rate / yield convention used by the
+        # rest of the stack after math_review.md §1.
+        df["coupon_rate"] = (
+            pd.to_numeric(df["coupon_rate"], errors="raise").astype(np.float32) / 100.0
+        )
         df["coupon_frequency"] = pd.to_numeric(df["coupon_frequency"], errors="raise").astype(np.int64)
 
         # Enforce current assumptions
@@ -171,7 +183,12 @@ class BondMetadataStore:
         coupon = df["coupon_rate"].to_numpy(dtype=np.float32)
         freq = df["coupon_frequency"].to_numpy(dtype=np.int64).astype(np.float32)
 
-        years_to_maturity = np.maximum(maturity_ord - asof_ord, 0) / self.business_days_per_year
+        # Compute years_to_maturity in CALENDAR years so the bond feature is
+        # on the same scale as the yield-curve maturities (a 1-calendar-year
+        # bond yields a feature value of 1.0). `business_days_per_year` is
+        # preserved on the store for naming / future use, but the actual
+        # year-fraction computation uses calendar days (math_review.md §2).
+        years_to_maturity = np.maximum(maturity_ord - asof_ord, 0) / _CALENDAR_DAYS_PER_YEAR
 
         # Approximate coupon-cycle features from ytm and frequency only
         u = years_to_maturity * freq                           # ~ remaining coupon periods
@@ -186,7 +203,10 @@ class BondMetadataStore:
         accrued_fraction = (years_from_last_coupon / period_years).astype(np.float32)
         accrued_fraction = np.clip(accrued_fraction, 0.0, 1.0)
 
-        accrued_interest_per_100 = (accrued_fraction * (coupon / freq)).astype(np.float32)
+        # Accrued interest as a fraction of face value, in DECIMAL (matches
+        # coupon_rate's units). The legacy name was "accrued_interest_per_100"
+        # but with coupon now in decimal the value is no longer per-100.
+        accrued_interest = (accrued_fraction * (coupon / freq)).astype(np.float32)
 
         feats = np.column_stack(
             [
@@ -197,7 +217,7 @@ class BondMetadataStore:
                 freq.astype(np.float32),
                 remaining_coupon_count,
                 accrued_fraction,
-                accrued_interest_per_100,
+                accrued_interest,
             ]
         )
 
@@ -209,7 +229,7 @@ class BondMetadataStore:
             "coupon_frequency",
             "remaining_coupon_count",
             "accrued_fraction",
-            "accrued_interest_per_100",
+            "accrued_interest",
         ]
 
         out = torch.as_tensor(feats, dtype=out_dtype, device=dev) if to_torch else feats

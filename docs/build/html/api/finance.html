@@ -155,6 +155,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../examples/05_gridsearch.html#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/05_gridsearch.html#joint-yc-futures-grids">5.4 Joint YC + futures grids</a></li>
 </ul>
 </li>
 </ul>
@@ -626,18 +627,23 @@
 <dt class="sig sig-object py" id="src.finance.pricer_v2.to_year_fraction">
 <span class="sig-prename descclassname"><span class="pre">src.finance.pricer_v2.</span></span><span class="sig-name descname"><span class="pre">to_year_fraction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_dates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asof_date</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">business_days_per_year</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">252.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/finance/pricer_v2.html#to_year_fraction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.finance.pricer_v2.to_year_fraction" title="Link to this definition"></a></dt>
 <dd><p>Convert dates to a 1D tensor of year-fractions relative to <cite>asof_date</cite>.</p>
-<p>Vectorised via numpy <code class="docutils literal notranslate"><span class="pre">datetime64</span></code> arithmetic — no Python-level loop
-over individual timestamps.</p>
+<p>Year-fractions are always in <strong>calendar years</strong> so they line up with
+the yield-curve maturity convention (<cite>SVENY01</cite> = 1 calendar-year
+zero). The <code class="docutils literal notranslate"><span class="pre">business_days_per_year</span></code> argument is accepted for
+back-compat but is <strong>not used</strong> in the conversion — see
+<code class="docutils literal notranslate"><span class="pre">math_review.md</span></code> §2.</p>
+<p>Vectorised via numpy <code class="docutils literal notranslate"><span class="pre">datetime64</span></code> arithmetic.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target_dates</strong> (<em>Union</em><em>[</em><em>Date</em><em>, </em><em>List</em><em>[</em><em>Date</em><em>]</em><em>]</em>) – Target dates. A scalar input is wrapped into a single-element list.</p></li>
 <li><p><strong>asof_date</strong> (<em>Date</em>) – Reference date.</p></li>
-<li><p><strong>business_days_per_year</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Year-fraction denominator (252.0 by default).</p></li>
+<li><p><strong>business_days_per_year</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Ignored. Kept on the signature so old callers don’t break.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>1D float32 tensor of year-fractions with the same length as <cite>target_dates</cite>.</p>
+<dd class="field-even"><p>1D float32 tensor of year-fractions (calendar) with the same length
+as <cite>target_dates</cite>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tensor</p>
@@ -701,16 +707,20 @@ factor (project_description §5 + optimisation_plan §5.2).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="src.finance.pricer_v2.Pricer.price_yield_curve">
 <span class="sig-name descname"><span class="pre">price_yield_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">realisations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maturities</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/finance/pricer_v2.html#Pricer.price_yield_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.finance.pricer_v2.Pricer.price_yield_curve" title="Link to this definition"></a></dt>
-<dd><p>Compute model-implied continuously compounded yields (in percent).</p>
+<dd><p>Compute model-implied continuously compounded yields, in DECIMAL units.</p>
+<p>Convention: <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">-log(P)</span> <span class="pre">/</span> <span class="pre">T</span></code>. To get a percentage figure for
+display, multiply by 100 at the call-site. The whole stack
+(loader, pricer, loss) is now consistently decimal — see
+<code class="docutils literal notranslate"><span class="pre">math_review.md</span></code> §1.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>realisations</strong> (<em>Tensor</em>) – Short-rate paths, shape (n_paths, steps) or (n_paths, steps, 1).</p></li>
+<li><p><strong>realisations</strong> (<em>Tensor</em>) – Short-rate paths (decimal), shape (n_paths, steps) or (n_paths, steps, 1).</p></li>
 <li><p><strong>maturities</strong> (<em>Tensor</em>) – Maturities in years, shape (M,).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Yields in percent, shape (M,).</p>
+<dd class="field-even"><p>Yields in decimal, shape (M,).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tensor</p>

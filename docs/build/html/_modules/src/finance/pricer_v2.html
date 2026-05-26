@@ -152,6 +152,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#anatomy-of-a-param-grid-key">5.3 Anatomy of a <code class="docutils literal notranslate"><span class="pre">param_grid</span></code> key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/05_gridsearch.html#joint-yc-futures-grids">5.4 Joint YC + futures grids</a></li>
 </ul>
 </li>
 </ul>
@@ -645,19 +646,27 @@
 <span class="c1"># Date / year-fraction helper</span>
 <span class="c1"># ---------------------------------------------------------------------</span>
 
+<span class="n">CALENDAR_DAYS_PER_YEAR</span> <span class="o">=</span> <span class="mf">365.25</span>
+
+
 <div class="viewcode-block" id="to_year_fraction">
 <a class="viewcode-back" href="../../../api/finance.html#src.finance.pricer_v2.to_year_fraction">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">to_year_fraction</span><span class="p">(</span>
     <span class="n">target_dates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Date</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Date</span><span class="p">]],</span>
     <span class="n">asof_date</span><span class="p">:</span> <span class="n">Date</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">business_days_per_year</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">252.0</span><span class="p">,</span>
+    <span class="n">business_days_per_year</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">252.0</span><span class="p">,</span>    <span class="c1"># kept for back-compat only</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convert dates to a 1D tensor of year-fractions relative to `asof_date`.</span>
 
-<span class="sd">    Vectorised via numpy ``datetime64`` arithmetic — no Python-level loop</span>
-<span class="sd">    over individual timestamps.</span>
+<span class="sd">    Year-fractions are always in **calendar years** so they line up with</span>
+<span class="sd">    the yield-curve maturity convention (`SVENY01` = 1 calendar-year</span>
+<span class="sd">    zero). The ``business_days_per_year`` argument is accepted for</span>
+<span class="sd">    back-compat but is **not used** in the conversion — see</span>
+<span class="sd">    ``math_review.md`` §2.</span>
+
+<span class="sd">    Vectorised via numpy ``datetime64`` arithmetic.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -666,22 +675,21 @@
 <span class="sd">    asof_date : Date</span>
 <span class="sd">        Reference date.</span>
 <span class="sd">    business_days_per_year : float</span>
-<span class="sd">        Year-fraction denominator (252.0 by default).</span>
+<span class="sd">        Ignored. Kept on the signature so old callers don&#39;t break.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    Tensor</span>
-<span class="sd">        1D float32 tensor of year-fractions with the same length as `target_dates`.</span>
+<span class="sd">        1D float32 tensor of year-fractions (calendar) with the same length</span>
+<span class="sd">        as `target_dates`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_check_positive_value</span><span class="p">(</span><span class="n">business_days_per_year</span><span class="p">,</span> <span class="s2">&quot;business_days_per_year&quot;</span><span class="p">)</span>
-
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_dates</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
         <span class="n">target_dates</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_dates</span><span class="p">]</span>
 
     <span class="n">asof</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">asof_date</span><span class="p">)</span><span class="o">.</span><span class="n">normalize</span><span class="p">(),</span> <span class="s2">&quot;D&quot;</span><span class="p">)</span>
     <span class="n">targets</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">target_dates</span><span class="p">))</span><span class="o">.</span><span class="n">normalize</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;datetime64[D]&quot;</span><span class="p">)</span>
     <span class="n">day_deltas</span> <span class="o">=</span> <span class="p">(</span><span class="n">targets</span> <span class="o">-</span> <span class="n">asof</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int64&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">day_deltas</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">business_days_per_year</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">day_deltas</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">CALENDAR_DAYS_PER_YEAR</span><span class="p">))</span></div>
 
 
 
@@ -778,11 +786,28 @@
         <span class="n">realisations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_2d_paths</span><span class="p">(</span><span class="n">realisations</span><span class="p">)</span>
 
         <span class="n">dt</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps_per_year</span><span class="p">)</span>
+        <span class="n">n_steps</span> <span class="o">=</span> <span class="n">realisations</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Guard maturities: must be strictly positive (P(0,0)=1 by definition,</span>
+        <span class="c1"># so a zero maturity is ill-posed for the loss) AND fit inside the</span>
+        <span class="c1"># simulation horizon (math_review.md §7 + §9).</span>
+        <span class="k">if</span> <span class="n">maturities</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">realisations</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">realisations</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">maturities</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;price_zcb: maturities must be strictly positive; got min=</span><span class="si">{</span><span class="n">maturities</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">max_grid_years</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">maturities</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">&gt;</span> <span class="n">max_grid_years</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;price_zcb: requested maturity </span><span class="si">{</span><span class="n">maturities</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> exceeds the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;simulation horizon </span><span class="si">{</span><span class="n">max_grid_years</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (n_steps=</span><span class="si">{</span><span class="n">n_steps</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;steps_per_year=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">steps_per_year</span><span class="si">}</span><span class="s2">). Increase max_maturity or trainer.dt.&quot;</span>
+            <span class="p">)</span>
 
         <span class="c1"># Round, don&#39;t truncate, when mapping maturities onto the grid</span>
         <span class="c1"># (project_description §9, optimisation_plan §5.1). Clamp to &gt;= 1 so</span>
         <span class="c1"># idx - 1 &gt;= 0 in the index_select below (project_description §5.3).</span>
-        <span class="n">n_steps</span> <span class="o">=</span> <span class="n">realisations</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">maturities</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps_per_year</span><span class="p">))</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="n">n_steps</span><span class="p">)</span>
 
@@ -804,23 +829,28 @@
 <a class="viewcode-back" href="../../../api/finance.html#src.finance.pricer_v2.Pricer.price_yield_curve">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">price_yield_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">realisations</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">maturities</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Compute model-implied continuously compounded yields (in percent).</span>
+<span class="sd">        Compute model-implied continuously compounded yields, in DECIMAL units.</span>
+
+<span class="sd">        Convention: ``y = -log(P) / T``. To get a percentage figure for</span>
+<span class="sd">        display, multiply by 100 at the call-site. The whole stack</span>
+<span class="sd">        (loader, pricer, loss) is now consistently decimal — see</span>
+<span class="sd">        ``math_review.md`` §1.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        realisations : Tensor</span>
-<span class="sd">            Short-rate paths, shape (n_paths, steps) or (n_paths, steps, 1).</span>
+<span class="sd">            Short-rate paths (decimal), shape (n_paths, steps) or (n_paths, steps, 1).</span>
 <span class="sd">        maturities : Tensor</span>
 <span class="sd">            Maturities in years, shape (M,).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Tensor</span>
-<span class="sd">            Yields in percent, shape (M,).</span>
+<span class="sd">            Yields in decimal, shape (M,).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">P</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">price_zcb</span><span class="p">(</span><span class="n">realisations</span><span class="o">=</span><span class="n">realisations</span><span class="p">,</span> <span class="n">maturities</span><span class="o">=</span><span class="n">maturities</span><span class="o">.</span><span class="n">float</span><span class="p">())</span>
-        <span class="n">y_percent</span> <span class="o">=</span> <span class="o">-</span><span class="mf">100.0</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">P</span><span class="p">)</span> <span class="o">/</span> <span class="n">maturities</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">y_percent</span></div>
+        <span class="n">y</span> <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">P</span><span class="p">)</span> <span class="o">/</span> <span class="n">maturities</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">y</span></div>
 
 
 <div class="viewcode-block" id="Pricer.price_short_rate">
@@ -1043,6 +1073,10 @@
                 <span class="n">simulated_times</span><span class="o">=</span><span class="n">simulated_times</span><span class="p">,</span>
                 <span class="n">target</span><span class="o">=</span><span class="n">snapshot</span><span class="o">.</span><span class="n">futures</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="c1"># Preserve any per-instrument metadata the user attached upstream</span>
+            <span class="c1"># (math_review.md §13). The &quot;source&quot; tag wins on conflict so</span>
+            <span class="c1"># downstream code can tell the model-implied target apart.</span>
+            <span class="n">merged_fut_meta</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">snapshot</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;model_implied&quot;</span><span class="p">}</span>
             <span class="n">model_futures</span> <span class="o">=</span> <span class="n">BatchedFuturesTarget</span><span class="p">(</span>
                 <span class="n">ids</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">snapshot</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ids</span><span class="p">),</span>
                 <span class="n">prices</span><span class="o">=</span><span class="n">prices</span><span class="p">,</span>
@@ -1051,9 +1085,10 @@
                 <span class="n">basket_lengths</span><span class="o">=</span><span class="n">snapshot</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">basket_lengths</span><span class="p">,</span>
                 <span class="n">conversion_factors_flat</span><span class="o">=</span><span class="n">snapshot</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">conversion_factors_flat</span><span class="p">,</span>
                 <span class="n">deliverable_ids_flat</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">snapshot</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">deliverable_ids_flat</span><span class="p">),</span>
-                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;model_implied&quot;</span><span class="p">},</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="n">merged_fut_meta</span><span class="p">,</span>
             <span class="p">)</span>
 
+        <span class="n">merged_meta</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">snapshot</span><span class="p">,</span> <span class="s2">&quot;meta&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}),</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;model_implied&quot;</span><span class="p">}</span>
         <span class="k">return</span> <span class="n">MarketSnapshot</span><span class="p">(</span>
             <span class="n">date</span><span class="o">=</span><span class="n">snapshot</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
             <span class="n">yield_curve</span><span class="o">=</span><span class="n">model_yield_curve</span><span class="p">,</span>
@@ -1061,7 +1096,7 @@
             <span class="n">bonds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">bonds_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">futures</span><span class="o">=</span><span class="n">model_futures</span><span class="p">,</span>
-            <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;model_implied&quot;</span><span class="p">},</span>
+            <span class="n">meta</span><span class="o">=</span><span class="n">merged_meta</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 

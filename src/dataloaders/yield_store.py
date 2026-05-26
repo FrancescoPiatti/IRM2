@@ -53,7 +53,13 @@ class YieldCurveStore:
         )
         df.index = pd.to_datetime(df.index, errors="raise").normalize()
         df = df.filter(like="SVENY").iloc[:, :max_maturity]
-        
+
+        # CSV yields are in PERCENT (e.g. SVENY01 = 6.10 means a 6.10% yield).
+        # The Pricer assumes rates / yields are in DECIMAL, so we convert
+        # once at the loader boundary and keep everything else in decimal
+        # (math_review.md §1).
+        df = df / 100.0
+
         # (There shouldn't be any na, but still)
         df.dropna(how="all", inplace=True)
 

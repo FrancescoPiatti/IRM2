@@ -29,9 +29,11 @@ from src.types.data_types import (
 
 
 def test_to_year_fraction_scalar():
+    # Calendar-year convention post math_review.md §2 — 366 calendar days
+    # between 2020-01-01 (leap year) and 2021-01-01 -> 366/365.25 ≈ 1.002.
     out = to_year_fraction(pd.Timestamp("2021-01-01"), pd.Timestamp("2020-01-01"))
     assert out.shape == (1,)
-    assert out.item() == pytest.approx(366 / 252.0)
+    assert out.item() == pytest.approx(366 / 365.25, rel=1e-5)
 
 
 def test_to_year_fraction_list():
@@ -70,6 +72,7 @@ def test_price_zcb_constant_rate_recovers_exp():
 
 
 def test_price_yield_curve_constant_rate():
+    """Yields are now returned in DECIMAL — math_review.md §1."""
     pricer = Pricer(steps_per_year=252)
     r = 0.04
     n_paths, T_years = 8, 3
@@ -77,8 +80,8 @@ def test_price_yield_curve_constant_rate():
     paths = torch.full((n_paths, steps), r)
     maturities = torch.tensor([1.0, 2.0, 3.0])
     y = pricer.price_yield_curve(paths, maturities)
-    # y in percent; expected = 100 * r for every maturity
-    assert torch.allclose(y, torch.full_like(y, 100 * r), atol=1e-3)
+    # y in decimal; expected = r for every maturity (flat short-rate path).
+    assert torch.allclose(y, torch.full_like(y, r), atol=1e-5)
 
 
 def test_price_short_rate_is_first_step_mean():
@@ -265,20 +268,22 @@ def test_price_futures_matches_manual_ctd():
 
 
 def test_price_snapshot_yield_only():
+    """Yields in DECIMAL post math_review.md §1."""
     pricer = Pricer(steps_per_year=252)
     n_paths, steps = 4, 252 * 2
-    realisations = torch.full((n_paths, steps), 0.05)
+    r = 0.05
+    realisations = torch.full((n_paths, steps), r)
     snap = MarketSnapshot(
         date=pd.Timestamp("2021-01-04"),
         yield_curve=YieldCurveTarget(
             date=pd.Timestamp("2021-01-04"),
             maturities=torch.tensor([1.0, 2.0]),
-            yields=torch.tensor([5.0, 5.0]),
+            yields=torch.tensor([r, r]),
         ),
     )
     out = pricer.price_snapshot(realisations=realisations, snapshot=snap)
     assert out.yield_curve is not None
-    assert torch.allclose(out.yield_curve.yields, torch.tensor([5.0, 5.0]), atol=1e-3)
+    assert torch.allclose(out.yield_curve.yields, torch.tensor([r, r]), atol=1e-5)
 
 
 def test_price_futures_records_diagnostics():

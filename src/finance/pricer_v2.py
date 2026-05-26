@@ -27,17 +27,25 @@ from ..utils.checks import _check_positive_value
 # Date / year-fraction helper
 # ---------------------------------------------------------------------
 
+CALENDAR_DAYS_PER_YEAR = 365.25
+
+
 def to_year_fraction(
     target_dates: Union[Date, List[Date]],
     asof_date: Date,
     *,
-    business_days_per_year: float = 252.0,
+    business_days_per_year: float = 252.0,    # kept for back-compat only
 ) -> Tensor:
     """
     Convert dates to a 1D tensor of year-fractions relative to `asof_date`.
 
-    Vectorised via numpy ``datetime64`` arithmetic — no Python-level loop
-    over individual timestamps.
+    Year-fractions are always in **calendar years** so they line up with
+    the yield-curve maturity convention (`SVENY01` = 1 calendar-year
+    zero). The ``business_days_per_year`` argument is accepted for
+    back-compat but is **not used** in the conversion — see
+    ``math_review.md`` §2.
+
+    Vectorised via numpy ``datetime64`` arithmetic.
 
     Parameters
     ----------
@@ -46,22 +54,21 @@ def to_year_fraction(
     asof_date : Date
         Reference date.
     business_days_per_year : float
-        Year-fraction denominator (252.0 by default).
+        Ignored. Kept on the signature so old callers don't break.
 
     Returns
     -------
     Tensor
-        1D float32 tensor of year-fractions with the same length as `target_dates`.
+        1D float32 tensor of year-fractions (calendar) with the same length
+        as `target_dates`.
     """
-    _check_positive_value(business_days_per_year, "business_days_per_year")
-
     if not isinstance(target_dates, (list, tuple)):
         target_dates = [target_dates]
 
     asof = np.datetime64(pd.Timestamp(asof_date).normalize(), "D")
     targets = pd.to_datetime(list(target_dates)).normalize().values.astype("datetime64[D]")
     day_deltas = (targets - asof).astype("int64").astype(np.float32)
-    return torch.from_numpy(day_deltas / float(business_days_per_year))
+    return torch.from_numpy(day_deltas / float(CALENDAR_DAYS_PER_YEAR))
 
 
 # ---------------------------------------------------------------------
@@ -153,11 +160,28 @@ class Pricer:
         realisations = self._to_2d_paths(realisations)
 
         dt = 1.0 / float(self.steps_per_year)
+        n_steps = realisations.size(1)
+
+        # Guard maturities: must be strictly positive (P(0,0)=1 by definition,
+        # so a zero maturity is ill-posed for the loss) AND fit inside the
+        # simulation horizon (math_review.md §7 + §9).
+        if maturities.numel() == 0:
+            return torch.empty(0, device=realisations.device, dtype=realisations.dtype)
+        if float(maturities.min().item()) <= 0.0:
+            raise ValueError(
+                f"price_zcb: maturities must be strictly positive; got min={maturities.min().item():.4f}."
+            )
+        max_grid_years = float(n_steps) * dt
+        if float(maturities.max().item()) > max_grid_years + 1e-9:
+            raise ValueError(
+                f"price_zcb: requested maturity {maturities.max().item():.4f} exceeds the "
+                f"simulation horizon {max_grid_years:.4f} (n_steps={n_steps}, "
+                f"steps_per_year={self.steps_per_year}). Increase max_maturity or trainer.dt."
+            )
 
         # Round, don't truncate, when mapping maturities onto the grid
         # (project_description §9, optimisation_plan §5.1). Clamp to >= 1 so
         # idx - 1 >= 0 in the index_select below (project_description §5.3).
-        n_steps = realisations.size(1)
         idx = torch.round(maturities * float(self.steps_per_year)).long()
         idx = idx.clamp(min=1, max=n_steps)
 
@@ -176,23 +200,28 @@ class Pricer:
 
     def price_yield_curve(self, realisations: Tensor, maturities: Tensor) -> Tensor:
         """
-        Compute model-implied continuously compounded yields (in percent).
+        Compute model-implied continuously compounded yields, in DECIMAL units.
+
+        Convention: ``y = -log(P) / T``. To get a percentage figure for
+        display, multiply by 100 at the call-site. The whole stack
+        (loader, pricer, loss) is now consistently decimal — see
+        ``math_review.md`` §1.
 
         Parameters
         ----------
         realisations : Tensor
-            Short-rate paths, shape (n_paths, steps) or (n_paths, steps, 1).
+            Short-rate paths (decimal), shape (n_paths, steps) or (n_paths, steps, 1).
         maturities : Tensor
             Maturities in years, shape (M,).
 
         Returns
         -------
         Tensor
-            Yields in percent, shape (M,).
+            Yields in decimal, shape (M,).
         """
         P = self.price_zcb(realisations=realisations, maturities=maturities.float())
-        y_percent = -100.0 * torch.log(P) / maturities.float()
-        return y_percent
+        y = -torch.log(P) / maturities.float()
+        return y
 
     def price_short_rate(self, realisations: Tensor) -> Tensor:
         """
@@ -406,6 +435,10 @@ class Pricer:
                 simulated_times=simulated_times,
                 target=snapshot.futures,
             )
+            # Preserve any per-instrument metadata the user attached upstream
+            # (math_review.md §13). The "source" tag wins on conflict so
+            # downstream code can tell the model-implied target apart.
+            merged_fut_meta = {**dict(snapshot.futures.metadata), "source": "model_implied"}
             model_futures = BatchedFuturesTarget(
                 ids=list(snapshot.futures.ids),
                 prices=prices,
@@ -414,9 +447,10 @@ class Pricer:
                 basket_lengths=snapshot.futures.basket_lengths,
                 conversion_factors_flat=snapshot.futures.conversion_factors_flat,
                 deliverable_ids_flat=list(snapshot.futures.deliverable_ids_flat),
-                metadata={"source": "model_implied"},
+                metadata=merged_fut_meta,
             )
 
+        merged_meta = {**dict(getattr(snapshot, "meta", {}) or {}), "source": "model_implied"}
         return MarketSnapshot(
             date=snapshot.date,
             yield_curve=model_yield_curve,
@@ -424,7 +458,7 @@ class Pricer:
             bonds=None,
             bonds_metadata=None,
             futures=model_futures,
-            meta={"source": "model_implied"},
+            meta=merged_meta,
         )
 
     # ------------------------------------------------------------------

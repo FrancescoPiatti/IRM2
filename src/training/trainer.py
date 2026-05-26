@@ -924,11 +924,17 @@ class Trainer:
         _check_positive_integer_value(num_epochs, 'num_epochs')
         self.model.train()
 
-        # Adjust start date based on lookback
+        # Adjust start date based on lookback (and its stride — the encoder
+        # needs ``lookback × lookback_freq`` historical rows for the first
+        # window). For hierarchical encoders, slow lookback dominates.
         if self.model.encoder_type == "simple":
-            start_date = self.dataloader._check_valid_start_date(start_date, self.lookback)
+            start_date = self.dataloader._check_valid_start_date(
+                start_date, self.lookback, frequency=self.lookback_freq,
+            )
         else:
-            start_date = self.dataloader._check_valid_start_date(start_date, self.lookback_slow)
+            start_date = self.dataloader._check_valid_start_date(
+                start_date, self.lookback_slow, frequency=self.lookback_slow_freq,
+            )
 
         # Check valid date range
         if start_date is not None and end_date is not None:

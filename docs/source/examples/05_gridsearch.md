@@ -129,4 +129,47 @@ root. Headline guidance:
 | `model.` | flat: ``model.latent_dim``, ``model.noise_dim`` | Forwarded to ``ShortRateModel(...)`` kwargs. |
 | `encoder.` | flat: ``encoder.mode``, ``encoder.net`` | Deep mapping edits **not** allowed — replace the whole mapping. |
 | `nsde.` | flat: ``nsde.type``, ``nsde.solver``, ``nsde.diffusion`` | Same rule: replace whole mappings. |
+| `bondnet.` | flat: ``bondnet.fusion_n_units``, ``bondnet.hidden_dim`` | Requires `base_bondnet_cfg`. `bondnet.latent_dim` is **set automatically** to match the trial's `model.latent_dim`. |
 | `trainer.` | dot-path: ``trainer.optimizer.params.lr``, ``trainer.scheduler.params.step_size`` | Deep mapping edits **are** allowed. |
+
+## 5.4 Joint YC + futures grids
+
+For the joint setting, pass a ``SimpleBondNetCfg`` (or ``FiLMBondNetCfg``)
+as ``base_bondnet_cfg``. The gridsearch overwrites
+``bondnet.latent_dim`` per trial so it always matches the trial's
+``model.latent_dim`` — you do **not** need to grid them together.
+
+```python
+from src.configs import SimpleBondNetCfg
+
+base_bondnet = SimpleBondNetCfg(
+    latent_dim=16,                       # overwritten per trial
+    bond_feat_dim=8,
+    latent_n_layers=2, latent_n_units=128,
+    bond_n_layers=2,   bond_n_units=64,
+    fusion_n_layers=2, fusion_n_units=128,
+    activation="silu",
+    output_positive=True,
+)
+
+search = OptunaGridSearch(
+    param_grid={
+        "model.latent_dim":     [16, 32],
+        "nsde.type":            ["simple", "ou"],
+        "bondnet.fusion_n_units": [64, 128],
+    },
+    dataloader=dl,
+    base_encoder_cfg=base_enc,
+    base_nsde_cfg=base_nsde,
+    base_trainer_cfg=base_tr,
+    base_bondnet_cfg=base_bondnet,
+    model_cls=ShortRateModel,
+    trainer_cls=Trainer,
+    direction="minimize",
+    study_name="YCFut_tier1",
+)
+```
+
+A ready-to-run version (10-year window, warmup-cosine, custom_euler)
+lives at
+``experiments_fra/gridsearch_experiments_on_YC_and_futures/grid_YCFut_tier1.py``.

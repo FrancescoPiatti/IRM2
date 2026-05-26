@@ -16,9 +16,18 @@ NSDEType = Literal['simple', 'ou']
 NoiseType = Literal['diagonal', 'general']
 SolverType = Literal['torchsde', 'custom_euler']
 
-# Change here to a better one
 def _default_mlp() -> Mapping[str, Any]:
+    """Default drift / long-term mean network — unconstrained MLP."""
     return freeze_dict({"type": "mlp"})
+
+
+def _default_softplus_mlp() -> Mapping[str, Any]:
+    """
+    Default MLP for fields that must stay non-negative — OU's
+    ``mean_reversion`` (κ ≥ 0 for genuine mean reversion) and the
+    diffusion network (σ ≥ 0 for a well-posed SDE).
+    """
+    return freeze_dict({"type": "mlp", "out_activation": "softplus"})
 
 
 @dataclass
@@ -123,42 +132,31 @@ class NSDECfg:
         _check_positive_value(self.atol, 'cfg.atol')
 
         if self.type == "simple":
-            # Fill defaults
+            # Fill defaults — diffusion must stay non-negative.
             if self.drift is None:
                 self.drift = _default_mlp()
             if self.diffusion is None:
-                self.diffusion = _default_mlp()
+                self.diffusion = _default_softplus_mlp()
 
-            # Conflicts: OU fields provided -> ignore with warning
-            if self.long_term_mean is not None or self.mean_reversion is not None:
-                warnings.warn(
-                    "NSDECfg(type='simple'): long_term_mean/mean_reversion were provided but will be ignored.",
-                    category=UserWarning,
-                    stacklevel=2,
-                )
-
-            # Remove OU-only fields
+            # Conflicts: OU fields provided -> ignore (no warning; the
+            # gridsearch routinely flips type=simple<->ou and a populated
+            # base would otherwise spam UserWarnings — math_review.md §6).
             self.long_term_mean = None
             self.mean_reversion = None
 
         elif self.type == "ou":
-            # Fill defaults
+            # Fill defaults — mean reversion AND diffusion must stay
+            # non-negative (κ ≥ 0 for genuine mean reversion;
+            # σ ≥ 0 for a well-posed SDE) — math_review.md §3.
             if self.long_term_mean is None:
                 self.long_term_mean = _default_mlp()
             if self.mean_reversion is None:
-                self.mean_reversion = _default_mlp()
+                self.mean_reversion = _default_softplus_mlp()
             if self.diffusion is None:
-                self.diffusion = _default_mlp()
+                self.diffusion = _default_softplus_mlp()
 
-            # Conflicts: simple-only fields provided -> ignore with warning
-            if self.drift is not None:
-                warnings.warn(
-                    "NSDECfg(type='ou'): drift was provided but will be ignored.",
-                    category=UserWarning,
-                    stacklevel=2,
-                )
-
-            # Remove simple-only fields
+            # Conflicts: simple-only fields provided -> ignored silently
+            # (same rationale as above).
             self.drift = None
 
         else:

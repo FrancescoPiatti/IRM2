@@ -159,6 +159,6 @@ class ShortRateStore:
             positions = np.arange(start_pos, anchor_pos + 1, frequency, dtype=int)
             window_df = self.data.iloc[positions]
 
-        out = torch.as_tensor(window_df.values, dtype=dtype, device=dev)  # (T, 1)
+        out = torch.as_tensor(window_df.to_numpy(copy=True), dtype=dtype, device=dev)  # (T, 1)
 
         return out

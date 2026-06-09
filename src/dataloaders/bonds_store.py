@@ -55,7 +55,7 @@ class BondStore:
             return None
 
         ids = list(row.index)
-        prices = torch.as_tensor(row.values, dtype=torch.float32, device=dev)
+        prices = torch.as_tensor(row.to_numpy(copy=True), dtype=torch.float32, device=dev)
 
         metadata: Dict[str, Any] = {}
         if self.meta_df is not None:

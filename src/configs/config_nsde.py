@@ -96,6 +96,19 @@ class NSDECfg:
     # footprint. Ignored by the ``torchsde`` backend.
     checkpoint_chunk_size: Optional[int] = None
 
+    # Optional smooth bounds on the SDE coefficients. When set to a
+    # positive float, the drift is squashed via
+    # ``drift_bound * tanh(raw / drift_bound)`` and the diffusion via
+    # ``diffusion_bound * tanh(raw / diffusion_bound)``. This keeps the
+    # latent state from running away over a long Euler unroll — the
+    # dominant source of exploding / non-finite gradients through the
+    # 100s-to-1000s-step backward chain. ``None`` (default) keeps the
+    # unbounded behaviour. ``tanh`` is near-identity for small arguments,
+    # so a generous bound (e.g. 5-10) barely perturbs normal dynamics
+    # while still capping blow-ups.
+    drift_bound: Optional[float] = None
+    diffusion_bound: Optional[float] = None
+
     # Simple-only networks
     drift: Optional[Mapping[str, Any]] = None
 
@@ -139,6 +152,12 @@ class NSDECfg:
         _check_positive_value(self.dt, 'cfg.dt')
         _check_positive_value(self.rtol, 'cfg.rtol')
         _check_positive_value(self.atol, 'cfg.atol')
+
+        # Optional coefficient bounds — positive when provided.
+        if self.drift_bound is not None:
+            _check_positive_value(self.drift_bound, 'cfg.drift_bound')
+        if self.diffusion_bound is not None:
+            _check_positive_value(self.diffusion_bound, 'cfg.diffusion_bound')
 
         if self.type == "simple":
             # Fill defaults — diffusion must stay non-negative.

@@ -105,7 +105,7 @@ class YieldCurveStore:
         if pos < 0:
             raise ValueError(f"No yield curve <= {ts}")
         row = self.data.iloc[pos]
-        return torch.as_tensor(row.values, dtype=dtype, device=dev)
+        return torch.as_tensor(row.to_numpy(copy=True), dtype=dtype, device=dev)
     
 
     def get_curve(
@@ -129,7 +129,7 @@ class YieldCurveStore:
             raise KeyError(f"YieldCurveStore: no curve available exactly on {ts.date()}.")
 
         row = self.data.loc[ts]
-        return torch.as_tensor(row.values, dtype=dtype, device=dev)
+        return torch.as_tensor(row.to_numpy(copy=True), dtype=dtype, device=dev)
 
 
     def get_next_curve(
@@ -150,7 +150,7 @@ class YieldCurveStore:
         if pos >= len(self.data):
             raise ValueError(f"No yield curve > {ts}")
         row = self.data.iloc[pos]
-        return torch.as_tensor(row.values, dtype=dtype, device=dev)
+        return torch.as_tensor(row.to_numpy(copy=True), dtype=dtype, device=dev)
 
 
     def get_maturities(
@@ -203,7 +203,7 @@ class YieldCurveStore:
             positions = np.arange(start_pos, anchor_pos + 1, frequency, dtype=int)
             window_df = self.data.iloc[positions]
 
-        out = torch.as_tensor(window_df.values, dtype=dtype, device=dev)
+        out = torch.as_tensor(window_df.to_numpy(copy=True), dtype=dtype, device=dev)
 
         if return_dates:
             return window_df.index.to_list(), out

@@ -29,9 +29,15 @@ Design choices
                                          gradient checkpointing.
     - ``window_step = 4``              — ~one optimiser step per
                                          business week of training data.
-    - ``trainer.dt = 1/128``           — simulation grid spacing.
-    - ``nsde.dt = 1/252``              — solver step (≤ trainer.dt) on
-                                         the single 252-day-year basis.
+    - ``trainer.dt = 1/32``            — simulation grid spacing →
+                                         10yr × 32 = 320 Euler steps.
+                                         Short unroll = stable backprop
+                                         (was 1/128 → 1280 steps, which
+                                         exploded the gradient).
+    - ``nsde.drift_bound = 5``,
+      ``nsde.diffusion_bound = 2``     — smooth tanh bounds on the SDE
+                                         coefficients so the latent state
+                                         can't run away over the unroll.
     - ``lookback = 64`` / ``freq = 2`` — ~one quarter of YC history.
     - ``epochs = 100``                 — warmup_cosine(warmup=20, max=100)
                                          + patience=20 early stopping.
@@ -174,11 +180,21 @@ def main() -> None:
     # Gradient checkpointing on the SDE Euler loop. The NaN issue was the
     # AMP + checkpointing *combination*; checkpointing on its own is
     # bitwise-equivalent in fp32 (covered by the
-    # ``test_custom_euler_checkpointed_matches_uncheckpointed`` test). We
-    # need it back on to fit the fp32 autograd graph at latent_dim=64.
-    # If you still hit OOM after this, drop ``base_tr.batch_window`` to 8
-    # first (halves the saved chunk-input tensor), then ``n_paths`` to 256.
+    # ``test_custom_euler_checkpointed_matches_uncheckpointed`` test).
+    # With the shorter unroll below (trainer.dt = 1/32 -> 320 steps) the
+    # autograd graph is already 4x smaller, so this is mostly insurance.
     base_nsde.checkpoint_chunk_size = 8
+
+    # SMOOTH COEFFICIENT BOUNDS — the key stability fix. Backprop through
+    # the multi-hundred-step Euler unroll multiplies one Jacobian per
+    # step; once the drift/diffusion grow, that product explodes to inf
+    # and the optimizer-step guard rejects every update (the "non-finite
+    # gradient" wall seen around epoch 8). Squashing the drift/diffusion
+    # with ``bound * tanh(raw / bound)`` keeps the latent state — and
+    # hence the Jacobians — in a sane range. The bounds are generous, so
+    # they're near-identity for normal dynamics and only bite on blow-ups.
+    base_nsde.drift_bound = 5.0
+    base_nsde.diffusion_bound = 2.0
 
     common_drift_net = {
         "type": "mlp",
@@ -205,7 +221,12 @@ def main() -> None:
     base_tr.batch_window = 16
     base_tr.window_step = 4
     base_tr.accumulate_windows = 2
-    base_tr.dt = 1 / 128
+    # Simulation grid spacing. 1/32 -> 10yr * 32 = 320 Euler steps (was
+    # 1/128 -> 1280). The backprop chain is the #1 driver of exploding
+    # gradients: cutting it 4x makes the same LR far more stable, uses 4x
+    # less autograd memory, and runs ~4x faster per window. 320 steps is
+    # still plenty fine for the discount-factor integral over 1..10y.
+    base_tr.dt = 1 / 32
 
     # Encoder lookback ~ one quarter of business days
     base_tr.lookback = 64
@@ -219,17 +240,21 @@ def main() -> None:
     base_tr.loss_weights.short_rate  = 1.0
     base_tr.loss_weights.futures     = 1e-4
 
-    # Optimiser — adamw with a single learning rate (no grid axis). LR
-    # dropped from 1e-3 to 5e-4 for the stability run; once a config is
-    # known to converge you can push it back up.
+    # Optimiser — adamw with a single learning rate (no grid axis).
+    # Peak LR = 2e-4. In the previous run the instability kicked in
+    # around epoch 8 — exactly while the 20-epoch warmup was still
+    # *ramping LR up* past ~2e-4. We both lower the peak and shorten the
+    # warmup (below) so the optimiser isn't being pushed harder into the
+    # unstable region as it goes.
     base_tr.optimizer.name = "adamw"
-    base_tr.optimizer.params = {"lr": 5e-4, "weight_decay": 1e-4}
+    base_tr.optimizer.params = {"lr": 2e-4, "weight_decay": 1e-4}
 
-    # Scheduler — warmup_cosine with 20 warmup epochs and cosine decay
-    # to eta_min over the remaining (max_epochs - warmup_epochs) epochs.
+    # Scheduler — warmup_cosine with a SHORT 5-epoch warmup then cosine
+    # decay to eta_min. Short warmup means LR peaks early and only ever
+    # decays afterwards, instead of climbing into the instability.
     base_tr.scheduler.name = "warmup_cosine"
     base_tr.scheduler.params = {
-        "warmup_epochs": 20,
+        "warmup_epochs": 5,
         "max_epochs": 100,
         "eta_min": 1e-5,
     }

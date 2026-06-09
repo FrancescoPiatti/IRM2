@@ -227,7 +227,7 @@ class FuturesStore:
 
         ts = self.get_date_on_or_before(date)
         row = self.quotes_wide.loc[ts]
-        return torch.as_tensor(row.values, dtype=out_dtype, device=dev)
+        return torch.as_tensor(row.to_numpy(copy=True), dtype=out_dtype, device=dev)
 
     def get_prices(
             self,
@@ -249,7 +249,7 @@ class FuturesStore:
             raise KeyError(f"FuturesStore: no futures quotes available exactly on {ts.date()}.")
 
         row = self.quotes_wide.loc[ts]
-        return torch.as_tensor(row.values, dtype=out_dtype, device=dev)
+        return torch.as_tensor(row.to_numpy(copy=True), dtype=out_dtype, device=dev)
 
     # ------------------------------------------------------------------
     # Active-ticker selection

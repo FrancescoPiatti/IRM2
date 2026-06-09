@@ -92,6 +92,12 @@ class BaseNSDE(nn.Module):
         self.atol = float(config.atol)
         self.solver = str(getattr(config, "solver", "torchsde")).lower()
 
+        # Optional smooth coefficient bounds (None => unbounded).
+        db = getattr(config, "drift_bound", None)
+        gb = getattr(config, "diffusion_bound", None)
+        self.drift_bound = float(db) if db else None
+        self.diffusion_bound = float(gb) if gb else None
+
         self.sdeint_fn = torchsde.sdeint_adjoint if self.adjoint else torchsde.sdeint
 
         # ------------------------------------------
@@ -165,6 +171,19 @@ class BaseNSDE(nn.Module):
     def g(self, t, z):
         """Diffusion term g(t, z)."""
         raise NotImplementedError
+
+
+    @staticmethod
+    def _soft_bound(x: Tensor, bound: float) -> Tensor:
+        """
+        Smoothly squash ``x`` into ``(-bound, bound)`` via
+        ``bound * tanh(x / bound)``. Near-identity for ``|x| << bound``,
+        saturates for ``|x| >> bound``. Used to keep the SDE coefficients
+        (and hence the latent state) from running away over a long Euler
+        unroll, which is the main source of non-finite gradients through
+        the backward chain.
+        """
+        return bound * torch.tanh(x / bound)
 
 
     # -------------------------
@@ -416,7 +435,10 @@ class Simple_NeuralSDE(BaseNSDE):
         """
         Drift f(t, z). Expects z of shape (n_paths, latent_dim).
         """
-        return self.drift(self._pack_tz(t, z))             # (n_paths, latent_dim)
+        drift = self.drift(self._pack_tz(t, z))            # (n_paths, latent_dim)
+        if self.drift_bound is not None:
+            drift = self._soft_bound(drift, self.drift_bound)
+        return drift
 
 
     def g(self, t, z) -> Tensor:
@@ -424,6 +446,8 @@ class Simple_NeuralSDE(BaseNSDE):
         Diffusion g(t, z). Expects z of shape (n_paths, latent_dim).
         """
         out = self.diffusion(self._pack_tz(t, z))
+        if self.diffusion_bound is not None:
+            out = self._soft_bound(out, self.diffusion_bound)
         if self.noise_type == 'diagonal':
             return out
         return out.view(-1, self.latent_dim, self.noise_dim)   # (n_paths, latent_dim, noise_dim)
@@ -480,7 +504,10 @@ class OU_NeuralSDE(BaseNSDE):
         x = self._pack_tz(t, z)
         theta = self.long_term_mean(x)                 # (n_paths, latent_dim)
         kappa = self.mean_reversion(x)                 # (n_paths, latent_dim)
-        return kappa * (theta - z)
+        drift = kappa * (theta - z)
+        if self.drift_bound is not None:
+            drift = self._soft_bound(drift, self.drift_bound)
+        return drift
 
 
     def g(self, t, z) -> Tensor:
@@ -488,6 +515,8 @@ class OU_NeuralSDE(BaseNSDE):
         Diffusion g(t, z). Expects z of shape (n_paths, latent_dim).
         """
         out = self.diffusion(self._pack_tz(t, z))
+        if self.diffusion_bound is not None:
+            out = self._soft_bound(out, self.diffusion_bound)
         if self.noise_type == 'diagonal':
             return out
         return out.view(-1, self.latent_dim, self.noise_dim)

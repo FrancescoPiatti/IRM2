@@ -131,6 +131,52 @@ class FuturesStore:
         d = d.drop(columns=["Year"])
         d["CF"] = pd.to_numeric(d["CF"], errors="raise")
 
+        # Defensive: drop any deliverable row with NaN or non-positive CF.
+        # Treasury conversion factors are always in (0, 1] for the 6%-coupon
+        # convention, so anything outside that range is a data error. A
+        # single NaN CF anywhere in the basket of an active contract turns
+        # the futures pricer into NaN forever (cf_adj = B/cf -> NaN ->
+        # segmented amin -> NaN -> loss NaN). For example, ``futures_dlv.csv``
+        # ships at least one row (TYH2021) with CF=NaN as of the current
+        # bundle — see the data-integrity notebook.
+        n_before = len(d)
+        bad_mask = d["CF"].isna() | (d["CF"] <= 0.0)
+        if bool(bad_mask.any()):
+            n_bad = int(bad_mask.sum())
+            bad_tickers = sorted(d.loc[bad_mask, "Ticker"].astype(str).unique().tolist())
+            import warnings
+            warnings.warn(
+                f"FuturesStore: dropping {n_bad}/{n_before} deliverable rows "
+                f"with NaN or non-positive CF (tickers affected: {bad_tickers}). "
+                "These rows would poison the CTD min during futures pricing.",
+                category=UserWarning,
+                stacklevel=2,
+            )
+            d = d.loc[~bad_mask].reset_index(drop=True)
+
+        # If any ticker is left with an empty basket (either because all
+        # its deliverables were filtered above, or because the
+        # deliverables CSV simply doesn't cover it), drop it from
+        # ``expirations`` too. ``get_active_tickers`` skips tickers not
+        # in ``expirations.index``, so this is the cleanest way to keep
+        # the snapshot pipeline from ever requesting a single-bond-NaN
+        # basket. Pre-filter year selection makes the affected set tiny
+        # in normal usage (post-2016 it's typically just TYH2021).
+        tickers_with_basket = set(d["Ticker"].astype(str).unique().tolist())
+        tickers_known = set(e.index.astype(str).tolist())
+        empty_basket_tickers = sorted(tickers_known - tickers_with_basket)
+        if empty_basket_tickers:
+            import warnings
+            warnings.warn(
+                f"FuturesStore: dropping {len(empty_basket_tickers)} ticker(s) "
+                f"with empty deliverables basket from `expirations` "
+                f"(first few: {empty_basket_tickers[:5]}). "
+                "These would never produce a finite futures price.",
+                category=UserWarning,
+                stacklevel=2,
+            )
+            e = e.loc[~e.index.isin(empty_basket_tickers)]
+
         return cls(
             quotes_wide=quotes_wide,
             expirations=e,

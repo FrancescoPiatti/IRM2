@@ -162,8 +162,16 @@ class MarketDataLoader:
         sr_aligned = sr_aligned.fillna(0.0)
 
         combined = pd.concat([yc_df, sr_aligned], axis=1)
+        # ``combined.values`` returns a read-only view of the underlying
+        # single-dtype block when the frame is homogeneously float32, which
+        # makes ``torch.as_tensor`` emit a ``UserWarning: The given Numpy
+        # array is not writable``. Force a writable copy via
+        # ``to_numpy(copy=True)`` so the warning disappears without
+        # changing semantics — we never mutate ``self._full_history``
+        # downstream, but the copy is cheap (one allocation at loader init)
+        # and silences the warning permanently.
         self._full_history = torch.as_tensor(
-            combined.values, dtype=self.dtype, device=self.device
+            combined.to_numpy(copy=True), dtype=self.dtype, device=self.device
         )                                                          # (N_dates, M + 1)
         self._history_dates = yc_df.index
 

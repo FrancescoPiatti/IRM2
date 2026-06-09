@@ -109,6 +109,16 @@ class NSDECfg:
     drift_bound: Optional[float] = None
     diffusion_bound: Optional[float] = None
 
+    # Near-identity initialisation. When set to a small positive float
+    # (e.g. 0.1), the OUTPUT linear layer of every drift/diffusion network
+    # is rescaled by this factor and its bias zeroed, so the SDE starts
+    # almost coefficient-free (drift ~ 0, diffusion ~ constant). The
+    # network then *learns* structure from a calm starting point instead
+    # of beginning with large random coefficients that make the long
+    # Euler unroll — and its backward pass — blow up in the first epochs.
+    # ``None`` (default) keeps PyTorch's standard init.
+    init_output_scale: Optional[float] = None
+
     # Simple-only networks
     drift: Optional[Mapping[str, Any]] = None
 
@@ -158,6 +168,8 @@ class NSDECfg:
             _check_positive_value(self.drift_bound, 'cfg.drift_bound')
         if self.diffusion_bound is not None:
             _check_positive_value(self.diffusion_bound, 'cfg.diffusion_bound')
+        if self.init_output_scale is not None:
+            _check_positive_value(self.init_output_scale, 'cfg.init_output_scale')
 
         if self.type == "simple":
             # Fill defaults — diffusion must stay non-negative.

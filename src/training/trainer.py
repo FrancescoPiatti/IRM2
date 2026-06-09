@@ -819,7 +819,7 @@ class Trainer:
     # Training helpers
     # ------------------------------------------------------------------
     
-    def _optimizer_step(self):
+    def _optimizer_step(self) -> bool:
         """
         Apply one optimizer update (with optional AMP + grad clipping).
 
@@ -829,6 +829,13 @@ class Trainer:
         (so it can shrink the loss scale next round). This prevents a
         single bad backward from polluting the Adam moments and turning
         every subsequent window into NaN.
+
+        Returns
+        -------
+        bool
+            ``True`` if a real optimizer step was applied, ``False`` if it
+            was skipped because of a non-finite gradient. Callers use this
+            to report a per-epoch ``applied/total`` ratio.
         """
         # (AMP) unscale grads so clipping operates in true scale.
         if self.use_amp:
@@ -851,8 +858,10 @@ class Trainer:
         if bad:
             # Drop the polluted gradients and tell the AMP scaler the
             # step failed (so its loss scale halves) — but do NOT touch
-            # the Adam moments, which are still clean from before.
-            self.logger.warning(
+            # the Adam moments, which are still clean from before. Logged
+            # at DEBUG to avoid spam; the per-epoch summary in ``train``
+            # reports the applied/total ratio at INFO/WARNING instead.
+            self.logger.debug(
                 "Skipping optimizer step: non-finite gradient detected."
             )
             self.optimizer.zero_grad(set_to_none=True)
@@ -860,7 +869,7 @@ class Trainer:
                 # ``scaler.update`` shrinks the loss scale when no
                 # successful step was reported this round.
                 self.scaler.update()
-            return
+            return False
 
         # (Optional) clip global grad norm for stability.
         if self.grad_clip_norm is not None:
@@ -875,6 +884,7 @@ class Trainer:
 
         # Zero gradients (set_to_none=True for performance).
         self.optimizer.zero_grad(set_to_none=True)
+        return True
 
 
     def _early_stopping_update(
@@ -1029,6 +1039,8 @@ class Trainer:
             # Epoch accounting
             total_epoch_loss = 0.0
             windows_counted = 0
+            opt_steps_total = 0      # optimizer-step attempts this epoch
+            opt_steps_skipped = 0    # of which were skipped (non-finite grad)
 
             self.optimizer.zero_grad(set_to_none=True)
 
@@ -1061,7 +1073,9 @@ class Trainer:
 
                 # Gradient accumulation: step every N usable windows
                 if (w % self.accumulate_windows) == 0:
-                    self._optimizer_step()
+                    stepped = self._optimizer_step()
+                    opt_steps_total += 1
+                    opt_steps_skipped += int(not stepped)
 
                 # Logging
                 if (w % max(1, self.log_every_n_windows)) == 0:
@@ -1080,7 +1094,9 @@ class Trainer:
 
             # Flush accumulation at epoch end
             if (windows_counted % self.accumulate_windows) != 0:
-                self._optimizer_step()
+                stepped = self._optimizer_step()
+                opt_steps_total += 1
+                opt_steps_skipped += int(not stepped)
 
             # -------------------------------------------------------
             
@@ -1088,6 +1104,19 @@ class Trainer:
             epoch_avg = total_epoch_loss / max(1, windows_counted)
             epoch_losses.append(epoch_avg)
             self.logger.info(f"Epoch {epoch} avg_loss={epoch_avg:.6f}")
+
+            # Optimizer-step health: how many steps were actually applied
+            # vs skipped because of a non-finite gradient this epoch. A
+            # small skip count is harmless; a large/growing one signals the
+            # SDE is still unstable (raise init_output_scale↓, drift_bound↓,
+            # lr↓, or trainer.dt↓).
+            opt_applied = opt_steps_total - opt_steps_skipped
+            level = self.logger.info if opt_steps_skipped == 0 else self.logger.warning
+            level(
+                f"Epoch {epoch} optimizer steps: {opt_applied}/{opt_steps_total} applied "
+                f"({opt_steps_skipped} skipped, "
+                f"{(100.0 * opt_steps_skipped / max(1, opt_steps_total)):.1f}%)"
+            )
 
             # Store partial history so pruned trials still have epoch_avgs available
             if self._optuna and (self._optuna_trial is not None):

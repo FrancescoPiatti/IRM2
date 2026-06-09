@@ -1,5 +1,6 @@
 # src/training/gridsearch.py
 import os
+import json
 import inspect
 import warnings
 
@@ -195,7 +196,16 @@ class OptunaGridSearch:
         grid_run_name = f"GridSearch_{self.study_name}"
         grid_dir = os.path.join(str(results_root), grid_run_name)
 
-        # Raise if already exists
+        # If the folder already exists, append the next free numeric suffix
+        # (``_1``, ``_2``, ...) instead of erroring out, so repeated runs of
+        # the same study don't clobber or refuse. The chosen name is echoed
+        # back through ``grid_run_name`` so every trial logs into it.
+        if os.path.exists(grid_dir):
+            i = 1
+            while os.path.exists(f"{grid_dir}_{i}"):
+                i += 1
+            grid_run_name = f"{grid_run_name}_{i}"
+            grid_dir = f"{grid_dir}_{i}"
         os.makedirs(grid_dir, exist_ok=False)
 
         # ------------------------------------------------------------------
@@ -331,6 +341,21 @@ class OptunaGridSearch:
                 eval_loss_series[int(trial.number)] = per_date
                 trial.set_user_attr("eval_losses", per_date)
 
+            # ----------------
+            # Per-config artifacts — save the trained model checkpoint and
+            # a results summary for THIS trial. The Trainer runs with IO
+            # disabled in optuna-mode, so we persist the per-config outputs
+            # here instead, one subfolder per trial.
+            # ----------------
+            self._save_trial_artifacts(
+                grid_dir=grid_dir,
+                trial=trial,
+                model=model,
+                value=value,
+                epoch_avgs=epoch_series.get(int(trial.number), []),
+                eval_losses=per_date,
+            )
+
             return value
 
         if n_trials is None:
@@ -402,6 +427,80 @@ class OptunaGridSearch:
         df_eval.to_csv(os.path.join(grid_dir, "eval_losses.csv"))
 
         return out
+
+
+    # ------------------------------------------------------------------
+    # Per-trial artifacts
+    # ------------------------------------------------------------------
+
+    def _save_trial_artifacts(
+        self,
+        *,
+        grid_dir: str,
+        trial: Any,
+        model: Any,
+        value: float,
+        epoch_avgs: Sequence[float],
+        eval_losses: Mapping[str, float],
+    ) -> None:
+        """
+        Persist one trial's model checkpoint + results summary.
+
+        Layout (under the shared GridSearch folder)::
+
+            <grid_dir>/trial_000/
+                model_state.pt     # torch state_dict of the trained model
+                summary.json       # decoded params, value, epoch + eval losses
+                model_info.json    # model's own metadata (if it exposes it)
+
+        Best-effort: any IO failure is logged as a warning and swallowed so
+        a save error never aborts the grid search.
+        """
+        try:
+            import torch  # local import: keep torch out of module import path
+        except Exception as exc:                       # pragma: no cover
+            warnings.warn(f"OptunaGridSearch: torch unavailable, skipping checkpoint ({exc}).",
+                          category=UserWarning, stacklevel=2)
+            return
+
+        trial_dir = os.path.join(grid_dir, f"trial_{int(trial.number):03d}")
+        os.makedirs(trial_dir, exist_ok=True)
+
+        decoded_params = {k: self._decode_value(k, v) for k, v in dict(trial.params).items()}
+
+        # 1) model checkpoint
+        try:
+            torch.save(model.state_dict(), os.path.join(trial_dir, "model_state.pt"))
+        except Exception as exc:
+            warnings.warn(f"OptunaGridSearch: failed to save model_state.pt for "
+                          f"trial {trial.number} ({exc}).",
+                          category=UserWarning, stacklevel=2)
+
+        # 2) results summary
+        summary = {
+            "trial_number": int(trial.number),
+            "value": float(value),
+            "params": decoded_params,
+            "epoch_avgs": [float(x) for x in epoch_avgs],
+            "eval_losses": {str(k): float(v) for k, v in dict(eval_losses).items()},
+        }
+        try:
+            with open(os.path.join(trial_dir, "summary.json"), "w") as f:
+                json.dump(summary, f, indent=2, default=str)
+        except Exception as exc:
+            warnings.warn(f"OptunaGridSearch: failed to write summary.json for "
+                          f"trial {trial.number} ({exc}).",
+                          category=UserWarning, stacklevel=2)
+
+        # 3) model's own metadata, if it exposes a saver
+        saver = getattr(model, "save_model_info", None)
+        if callable(saver):
+            try:
+                saver(trial_dir)
+            except Exception as exc:
+                warnings.warn(f"OptunaGridSearch: model.save_model_info failed for "
+                              f"trial {trial.number} ({exc}).",
+                              category=UserWarning, stacklevel=2)
 
 
     # ------------------------------------------------------------------

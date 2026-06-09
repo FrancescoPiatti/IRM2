@@ -196,6 +196,14 @@ def main() -> None:
     base_nsde.drift_bound = 5.0
     base_nsde.diffusion_bound = 2.0
 
+    # NEAR-IDENTITY INIT — shrink the output layer of every drift/diffusion
+    # network by 0.1 (and zero its bias) so the SDE starts almost
+    # coefficient-free and the first few epochs are calm. This is what
+    # removes the residual ~3% optimizer-step skips on the less-stable grid
+    # configs (e.g. OU drift / big diffusion), which otherwise begin with
+    # large random coefficients that spike the gradient through the unroll.
+    base_nsde.init_output_scale = 0.1
+
     common_drift_net = {
         "type": "mlp",
         "n_layers": 3, "n_units": [128, 128, 64],

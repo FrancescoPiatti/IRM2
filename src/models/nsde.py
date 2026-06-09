@@ -98,6 +98,10 @@ class BaseNSDE(nn.Module):
         self.drift_bound = float(db) if db else None
         self.diffusion_bound = float(gb) if gb else None
 
+        # Optional near-identity init scale (None => standard init).
+        ios = getattr(config, "init_output_scale", None)
+        self.init_output_scale = float(ios) if ios else None
+
         self.sdeint_fn = torchsde.sdeint_adjoint if self.adjoint else torchsde.sdeint
 
         # ------------------------------------------
@@ -184,6 +188,28 @@ class BaseNSDE(nn.Module):
         the backward chain.
         """
         return bound * torch.tanh(x / bound)
+
+
+    @staticmethod
+    def _shrink_output_layer(net: nn.Module, scale: float) -> None:
+        """
+        Near-identity init: rescale the *last* ``nn.Linear`` in ``net`` by
+        ``scale`` and zero its bias, in-place. This makes the network
+        output start near zero (for drift) or near a constant (for a
+        softplus diffusion), so the SDE begins almost coefficient-free and
+        the long Euler unroll is calm during the fragile first epochs.
+        No-op if ``net`` contains no ``nn.Linear``.
+        """
+        last_linear = None
+        for m in net.modules():
+            if isinstance(m, nn.Linear):
+                last_linear = m
+        if last_linear is None:
+            return
+        with torch.no_grad():
+            last_linear.weight.mul_(float(scale))
+            if last_linear.bias is not None:
+                last_linear.bias.zero_()
 
 
     # -------------------------
@@ -429,6 +455,12 @@ class Simple_NeuralSDE(BaseNSDE):
         if self.cfg.diffusion['type'] not in ('mlp', 'affine', 'constant'):
             raise NotImplementedError
 
+        # Near-identity init (optional): start with tiny drift/diffusion
+        # output so the first-epoch unroll is calm.
+        if self.init_output_scale is not None:
+            self._shrink_output_layer(self.drift, self.init_output_scale)
+            self._shrink_output_layer(self.diffusion, self.init_output_scale)
+
 
 
     def f(self, t, z) -> Tensor:
@@ -495,6 +527,13 @@ class OU_NeuralSDE(BaseNSDE):
             raise NotImplementedError
         if self.cfg.diffusion['type'] not in ('mlp', 'affine', 'constant'):
             raise NotImplementedError
+
+        # Near-identity init (optional): shrink theta / kappa / diffusion
+        # output layers so the OU dynamics start gentle.
+        if self.init_output_scale is not None:
+            self._shrink_output_layer(self.long_term_mean, self.init_output_scale)
+            self._shrink_output_layer(self.mean_reversion, self.init_output_scale)
+            self._shrink_output_layer(self.diffusion, self.init_output_scale)
 
 
     def f(self, t, z) -> Tensor:

@@ -83,7 +83,7 @@ BOND_FEAT_DIM = 8
 # Fixed structural hparams (not gridded). Defining them up here keeps the
 # search width explicit ("only 4 trials") and the magic numbers in one
 # place for the docstring above.
-LATENT_DIM = 32
+LATENT_DIM = 64
 
 
 def main() -> None:

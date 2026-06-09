@@ -27,7 +27,11 @@ from ..utils.checks import _check_positive_value
 # Date / year-fraction helper
 # ---------------------------------------------------------------------
 
-CALENDAR_DAYS_PER_YEAR = 365.25
+# Single year-fraction convention used across the whole stack
+# (loader / pricer / trainer.dt = 1/252). User spec: 252 days/year is the
+# divisor everywhere; we count calendar days between dates and divide by
+# 252, so 252 acts purely as the normaliser, not as a working-day filter.
+DAYS_PER_YEAR = 252.0
 
 
 def to_year_fraction(
@@ -39,11 +43,11 @@ def to_year_fraction(
     """
     Convert dates to a 1D tensor of year-fractions relative to `asof_date`.
 
-    Year-fractions are always in **calendar years** so they line up with
-    the yield-curve maturity convention (`SVENY01` = 1 calendar-year
-    zero). The ``business_days_per_year`` argument is accepted for
-    back-compat but is **not used** in the conversion — see
-    ``math_review.md`` §2.
+    Year-fractions use the **single 252 days/year convention** shared by
+    the loader, pricer, and trainer (``trainer.dt = 1/252``). The
+    ``business_days_per_year`` argument is accepted for back-compat but
+    is **not used** — the divisor is hard-wired to ``DAYS_PER_YEAR =
+    252`` so the convention is identical everywhere.
 
     Vectorised via numpy ``datetime64`` arithmetic.
 
@@ -59,8 +63,8 @@ def to_year_fraction(
     Returns
     -------
     Tensor
-        1D float32 tensor of year-fractions (calendar) with the same length
-        as `target_dates`.
+        1D float32 tensor of year-fractions (252-day basis) with the same
+        length as `target_dates`.
     """
     if not isinstance(target_dates, (list, tuple)):
         target_dates = [target_dates]
@@ -68,7 +72,7 @@ def to_year_fraction(
     asof = np.datetime64(pd.Timestamp(asof_date).normalize(), "D")
     targets = pd.to_datetime(list(target_dates)).normalize().values.astype("datetime64[D]")
     day_deltas = (targets - asof).astype("int64").astype(np.float32)
-    return torch.from_numpy(day_deltas / float(CALENDAR_DAYS_PER_YEAR))
+    return torch.from_numpy(day_deltas / float(DAYS_PER_YEAR))
 
 
 # ---------------------------------------------------------------------

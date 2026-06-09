@@ -14,6 +14,65 @@ from typing import Tuple
 from .activations import _get_activation
 
 
+def _build_norm(d_model: int, norm_type: str) -> nn.Module:
+    """
+    Construct the pre-norm layer used inside a Mamba block.
+
+    Parameters
+    ----------
+    d_model : int
+        Normalised feature dimension.
+    norm_type : str
+        One of ``"layernorm"`` or ``"rmsnorm"`` (case-insensitive).
+
+    Returns
+    -------
+    nn.Module
+        The instantiated normalisation module.
+
+    Raises
+    ------
+    ValueError
+        If ``norm_type`` is not a supported option.
+    """
+    nt = str(norm_type).lower()
+    if nt == "layernorm":
+        return nn.LayerNorm(d_model)
+    if nt == "rmsnorm":
+        # ``nn.RMSNorm`` was added in PyTorch 2.4. If the installed PyTorch
+        # is older, fall back to a hand-rolled RMSNorm with the same
+        # gain-only parametrisation.
+        if hasattr(nn, "RMSNorm"):
+            return nn.RMSNorm(d_model)
+        return _RMSNorm(d_model)
+    raise ValueError(
+        f"Unsupported Mamba norm_type '{norm_type}'. Expected 'layernorm' or 'rmsnorm'."
+    )
+
+
+class _RMSNorm(nn.Module):
+    """
+    Minimal RMSNorm fallback used only when ``torch.nn.RMSNorm`` is unavailable.
+
+    Parameters
+    ----------
+    dim : int
+        Feature dimension along which RMS is computed.
+    eps : float
+        Numerical floor added to the squared mean before sqrt.
+    """
+
+    def __init__(self, dim: int, eps: float = 1e-6):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(dim))
+        self.eps = float(eps)
+
+    def forward(self, x: Tensor) -> Tensor:
+        # rms = sqrt(mean(x**2, dim=-1, keepdim=True) + eps)
+        rms = x.pow(2).mean(dim=-1, keepdim=True).add(self.eps).sqrt()
+        return self.weight * (x / rms)
+
+
 class MambaBlock(nn.Module):
     """
     Single Mamba block: selective state space model (S6) with gating.
@@ -31,6 +90,11 @@ class MambaBlock(nn.Module):
         Local convolution width.
     expand : int
         Expansion factor for the inner dimension.
+    norm_type : str
+        Pre-norm variant. One of ``"layernorm"`` (default, backward
+        compatible) or ``"rmsnorm"``. RMSNorm drops the mean-subtraction
+        step of LayerNorm and tends to be slightly cheaper while behaving
+        comparably in practice (Zhang & Sennrich, 2019).
 
     Attributes
     ----------
@@ -50,8 +114,11 @@ class MambaBlock(nn.Module):
         Skip-connection weights, shape ``(d_inner,)``.
     out_proj : nn.Linear
         Projects d_inner back to d_model.
-    norm : nn.LayerNorm
-        Pre-norm applied to the input.
+    norm : nn.Module
+        Pre-norm applied to the input. ``nn.LayerNorm`` when
+        ``norm_type='layernorm'`` and ``nn.RMSNorm`` (or the
+        ``_RMSNorm`` fallback on older PyTorch) when
+        ``norm_type='rmsnorm'``.
     """
 
     def __init__(
@@ -60,6 +127,7 @@ class MambaBlock(nn.Module):
         d_state: int = 16,
         d_conv: int = 4,
         expand: int = 2,
+        norm_type: str = "layernorm",
     ):
         super().__init__()
 
@@ -68,6 +136,7 @@ class MambaBlock(nn.Module):
         self.d_conv = d_conv
         self.expand = expand
         self.d_inner = d_model * expand
+        self.norm_type = str(norm_type).lower()
 
         # Input projection: x -> (z, x_proj) where both are d_inner
         self.in_proj = Linear(d_model, 2 * self.d_inner, bias=False)
@@ -101,8 +170,8 @@ class MambaBlock(nn.Module):
         # Output projection
         self.out_proj = Linear(self.d_inner, d_model, bias=False)
 
-        # Layer norm
-        self.norm = nn.LayerNorm(d_model)
+        # Pre-norm — LayerNorm by default, RMSNorm opt-in via norm_type.
+        self.norm = _build_norm(d_model, self.norm_type)
 
     def forward(
         self,
@@ -237,6 +306,9 @@ class MambaEncoder(nn.Module):
         Dropout probability between blocks.
     out_activation : str or nn.Module
         Activation after the readout layer.
+    norm_type : str
+        Pre-norm variant used inside every Mamba block. One of
+        ``"layernorm"`` (default) or ``"rmsnorm"``.
 
     Attributes
     ----------
@@ -263,6 +335,7 @@ class MambaEncoder(nn.Module):
         expand: int = 2,
         dropout: Optional[float] = None,
         out_activation: Union[str, nn.Module] = Identity,
+        norm_type: str = "layernorm",
     ):
         super().__init__()
 
@@ -275,6 +348,7 @@ class MambaEncoder(nn.Module):
         self.expand = expand
         self._dropout = float(dropout) if dropout is not None else 0.0
         self.out_activation = _get_activation(out_activation)
+        self.norm_type = str(norm_type).lower()
 
         # Placeholders — will be set in _build
         self.input_proj = None
@@ -301,6 +375,7 @@ class MambaEncoder(nn.Module):
                     d_state=self.d_state,
                     d_conv=self.d_conv,
                     expand=self.expand,
+                    norm_type=self.norm_type,
                 )
             )
             if self._dropout > 0:

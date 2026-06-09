@@ -30,9 +30,12 @@ class DataLoaderCfg:
         Maximum maturity (in years) used to define the simulation horizon and
         the curve grid (e.g., 30 means up to 30Y).
     business_days_per_year : float
-        Year-fraction convention used across the loader and pricer (252.0 by
-        default — matches BondMetadataStore and the typical Treasury convention).
-        Use 365.25 for a calendar-day convention.
+        Year-fraction convention used across the loader and pricer.
+        Defaults to 252.0 — the single day-count basis used everywhere
+        in the stack (BondMetadataStore, Pricer.to_year_fraction,
+        Trainer.dt = 1/252). Per the project convention, year-fractions
+        are computed as ``calendar_days_between / 252.0`` so 252 acts as
+        the normaliser, not as a working-day filter.
     enable_yield : bool
         If True, yield curve targets are loaded / exposed in snapshots.
     enable_short_rate : bool

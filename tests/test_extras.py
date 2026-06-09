@@ -146,6 +146,52 @@ def test_nsde_accepts_per_path_z0_and_rejects_wrong_batch():
         _ = nsde(ts, z0_wrong, n_paths=10)
 
 
+def test_custom_euler_checkpointed_matches_uncheckpointed():
+    """
+    Gradient checkpointing on the Euler loop must produce numerically
+    identical forward output AND identical parameter gradients as the
+    plain solver, modulo float-rounding noise from RNG-state preservation.
+    """
+    torch.manual_seed(0)
+    cfg_plain = NSDECfg(type="simple", noise_type="diagonal")
+    cfg_plain.solver = "custom_euler"
+    cfg_plain.validate()
+    nsde_plain = Simple_NeuralSDE(latent_dim=4, config=cfg_plain)
+    nsde_plain.train()
+
+    torch.manual_seed(0)
+    cfg_ckpt = NSDECfg(type="simple", noise_type="diagonal")
+    cfg_ckpt.solver = "custom_euler"
+    cfg_ckpt.checkpoint_chunk_size = 8
+    cfg_ckpt.validate()
+    nsde_ckpt = Simple_NeuralSDE(latent_dim=4, config=cfg_ckpt)
+    nsde_ckpt.train()
+    nsde_ckpt.load_state_dict(nsde_plain.state_dict())
+
+    ts = torch.linspace(0.0, 1.0, 65)
+    z0 = torch.randn(6, 4, requires_grad=True)
+    z0_c = z0.detach().clone().requires_grad_(True)
+
+    torch.manual_seed(42)
+    out_plain = nsde_plain(ts, z0, n_paths=6)
+    torch.manual_seed(42)
+    out_ckpt  = nsde_ckpt(ts, z0_c, n_paths=6)
+
+    assert torch.allclose(out_plain, out_ckpt, atol=1e-5, rtol=1e-5)
+
+    out_plain.sum().backward()
+    out_ckpt.sum().backward()
+
+    # Parameter gradients should agree (chunk-by-chunk recomputation
+    # reuses the same RNG state thanks to preserve_rng_state=True).
+    for (n1, p1), (n2, p2) in zip(nsde_plain.named_parameters(), nsde_ckpt.named_parameters()):
+        assert n1 == n2
+        assert p1.grad is not None and p2.grad is not None, f"missing grad for {n1}"
+        assert torch.allclose(p1.grad, p2.grad, atol=1e-4, rtol=1e-4), (
+            f"grad mismatch for {n1}: max |diff| = {(p1.grad - p2.grad).abs().max().item():.3e}"
+        )
+
+
 def test_pack_tz_resets_cache_on_dtype_change():
     """Regression test for math_review.md §14 — the time-column cache must
     be rebuilt when `z`'s dtype changes (e.g. when entering / leaving
@@ -354,6 +400,120 @@ def test_custom_euler_distribution_matches_torchsde():
 def test_nsde_cfg_rejects_bad_solver():
     cfg = NSDECfg(type="simple"); cfg.solver = "magic"
     with pytest.raises(ValueError, match="solver"):
+        cfg.validate()
+
+
+# ---------------------------------------------------------------------------
+# Loss weights (math_review.md §1 / optimization_plan.md §10.1 P1)
+# ---------------------------------------------------------------------------
+
+
+def _build_joint_trainer(tmp_path, *, lw_yield=1.0, lw_sr=1.0, lw_fut=1.0, seed=0):
+    """Build a small joint YC+futures trainer + first-window batch."""
+    import torch
+    from datetime import datetime
+    from src.configs import (
+        DataLoaderCfg, EncoderCfg, NSDECfg, SimpleBondNetCfg,
+        TrainerCfg, LossWeightsCfg,
+    )
+    from src.dataloaders import MarketDataLoader
+    from src.models.short_rate_model import ShortRateModel
+    from src.training.trainer import Trainer
+
+    torch.manual_seed(seed)
+
+    dl = MarketDataLoader(DataLoaderCfg(
+        data_path="data2",
+        start_date=datetime(2021, 1, 1), end_date=datetime(2021, 6, 30),
+        max_maturity=3,
+        enable_yield=True, enable_short_rate=True, enable_futures=True,
+    ))
+    enc = EncoderCfg(mode="simple")
+    nsde = NSDECfg(type="simple", noise_type="diagonal"); nsde.solver = "custom_euler"
+    bondnet = SimpleBondNetCfg(
+        latent_dim=4, bond_feat_dim=8,
+        latent_n_layers=1, latent_n_units=4,
+        bond_n_layers=1, bond_n_units=4,
+        fusion_n_layers=1, fusion_n_units=4,
+        output_positive=True,
+    )
+    model = ShortRateModel(
+        name="lw", encoder=enc, nsde=nsde, bondnet=bondnet, latent_dim=4,
+    )
+
+    tcfg = TrainerCfg()
+    tcfg.results_root = str(tmp_path)
+    tcfg.n_paths = 4; tcfg.batch_window = 2; tcfg.window_step = 1
+    tcfg.lookback = 5; tcfg.lookback_freq = 1
+    tcfg.dt = 1 / 32; tcfg.early_stopping.enabled = False
+    tcfg.loss_weights = LossWeightsCfg(
+        yield_curve=lw_yield, short_rate=lw_sr, futures=lw_fut,
+    )
+    tr = Trainer(model=model, dataloader=dl, config=tcfg, device="cpu")
+
+    batch = list(dl.calendar.dates[60:62])
+    return tr, batch
+
+
+def test_loss_weights_record_raw_components_and_scale_grad(tmp_path):
+    """
+    The per-target component logged in ``loss_components`` should be the
+    RAW (unweighted) loss — that's the signal users monitor. The
+    backward gradients should still be scaled by λ.
+    """
+    import torch
+    # Run once with all weights = 1
+    tr1, batch = _build_joint_trainer(tmp_path / "w1", seed=0)
+    d_loss_1, comps_1 = tr1._forward_one_date(batch[0], return_components=True)
+    # Same setup, futures weight = 0.01
+    tr2, _ = _build_joint_trainer(tmp_path / "w2", seed=0,
+                                  lw_yield=1.0, lw_sr=1.0, lw_fut=0.01)
+    d_loss_2, comps_2 = tr2._forward_one_date(batch[0], return_components=True)
+
+    # Raw components should match (same weights × same network init).
+    for key in ("yield", "short_rate", "futures"):
+        assert comps_1[key] == pytest.approx(comps_2[key], rel=1e-5), (
+            f"raw component '{key}' should be unweighted: "
+            f"{comps_1[key]} vs {comps_2[key]}"
+        )
+
+    # The actual scalar loss should obey:
+    # loss_2 = comps['yield'] + comps['short_rate'] + 0.01 * comps['futures']
+    expected_2 = (
+        comps_2["yield"] + comps_2["short_rate"] + 0.01 * comps_2["futures"]
+    )
+    assert d_loss_2.item() == pytest.approx(expected_2, rel=1e-5)
+
+    # And loss_1 = sum of raw components.
+    expected_1 = comps_1["yield"] + comps_1["short_rate"] + comps_1["futures"]
+    assert d_loss_1.item() == pytest.approx(expected_1, rel=1e-5)
+
+
+def test_loss_weights_zero_futures_skips_that_branch(tmp_path):
+    """``loss_weights.futures = 0`` should disable the futures branch
+    entirely — no futures component is logged, no grad reaches BondNet."""
+    import torch
+    tr, batch = _build_joint_trainer(tmp_path, lw_fut=0.0, seed=1)
+    d_loss, comps = tr._forward_one_date(batch[0], return_components=True)
+    assert "futures" not in comps, comps
+    assert d_loss.item() == pytest.approx(
+        comps.get("yield", 0.0) + comps.get("short_rate", 0.0), rel=1e-5,
+    )
+
+    # No futures grad should flow to BondNet parameters.
+    d_loss.backward()
+    bondnet_grads = [
+        p.grad.abs().sum().item()
+        for p in tr.model.bondnet.parameters() if p.grad is not None
+    ]
+    assert all(g == 0.0 for g in bondnet_grads), bondnet_grads
+
+
+def test_trainer_cfg_rejects_negative_loss_weight():
+    from src.configs import TrainerCfg
+    cfg = TrainerCfg()
+    cfg.loss_weights.futures = -1.0
+    with pytest.raises(ValueError, match="loss_weights"):
         cfg.validate()
 
 

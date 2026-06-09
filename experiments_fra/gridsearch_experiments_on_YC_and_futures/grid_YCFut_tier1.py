@@ -1,57 +1,67 @@
 """
 Tier-1 grid search for the **joint YC + Treasury futures** calibration.
 
-Training window: 2015-01-01 → 2024-09-30 (~10 years), evaluation rolls
-forward one quarter past the training end.
+Training window: 2016-01-01 → 2024-06-30 (~8.5 years post-GFC tightening
+cycle, futures basket data well-populated), evaluation rolls forward
+one quarter past the training end.
 
 Design choices
 --------------
-* **Grid axes (8 trials total)** — only the architectural / structural
-  decisions the project_description leaves underdetermined:
+* **Grid axes (4 trials total)** — kept deliberately small per project
+  guidance: the grid only varies the architectural decisions that the
+  project_description leaves underdetermined, not optimiser knobs.
 
-    1. ``model.latent_dim``      — latent capacity {16, 32}
-    2. ``nsde.type``              — drift family {simple, OU}
-    3. ``nsde.diffusion``         — diffusion network size {small, big}
+    1. ``nsde.type``       — drift family {simple, OU}
+    2. ``nsde.diffusion``  — diffusion network width {small, big}
 
-  Learning rate is **fixed**, not gridded — once `warmup_cosine` is in
-  play the LR sensitivity is much smaller than the structural choices
-  above. The grid is reduced to the things that change the *model*,
-  not the *optimiser*.
+  Learning rate is **fixed** at 1e-3 (the moderate-config value verified
+  stable across 24 windows in ``code_review_report.md`` §2.1). Latent
+  dim is fixed at 32 — bigger dims gave diminishing returns on the
+  yield-curve fit in the §2 profile run.
 
-* **Fixed knobs** were chosen for a 10-year joint run with a few
-  hundred Monte Carlo paths:
+* **Fixed hparams (GPU-tuned)**:
 
-    - ``n_paths = 512``           — MC budget recommended by the project.
-    - ``batch_window = 16``       — windows × n_paths set the simulate
-                                    memory peak; 16×512×641×32×4 ≈ 670 MB.
-    - ``window_step = 4``         — ~150 windows / epoch on 10 yrs (~one
-                                    optimiser step per business week).
-    - ``trainer.dt = 1/64``       — simulation grid spacing.
-    - ``nsde.dt = 1/128``         — solver step (≤ trainer.dt).
-    - ``lookback = 64``           — ~one quarter of yield-curve history.
-    - ``epochs = 50``             — with warmup_cosine(warmup=5, max=50)
-                                    and patience=12 early stopping.
+    - ``device = cuda`` if available — auto-fallback to CPU only as a
+      safety net. The grid expects to run on GPU.
+    - ``n_paths = 512``                — MC budget recommended by the
+                                         project_description.
+    - ``batch_window = 16``            — fits ~10 GB VRAM with AMP +
+                                         gradient checkpointing.
+    - ``window_step = 4``              — ~one optimiser step per
+                                         business week of training data.
+    - ``trainer.dt = 1/128``           — simulation grid spacing.
+    - ``nsde.dt = 1/252``              — solver step (≤ trainer.dt) on
+                                         the single 252-day-year basis.
+    - ``lookback = 64`` / ``freq = 2`` — ~one quarter of YC history.
+    - ``epochs = 100``                 — warmup_cosine(warmup=20, max=100)
+                                         + patience=20 early stopping.
+    - ``use_amp = True`` on CUDA       — fp16 inside encoder + drift /
+                                         diffusion, fp32 at the
+                                         pricer / loss boundary.
+    - ``checkpoint_chunk_size = 8``    — gradient checkpointing on the
+                                         SDE Euler loop (cuts the
+                                         autograd graph footprint
+                                         ~(n_steps/8)× at ~2× compute).
+    - ``grad_clip_norm = 1.0``         — load-bearing for NaN-free runs
+                                         (see ``code_review_report.md``
+                                         §2.1).
 
-* **Scheduler**: ``warmup_cosine`` (5 warmup epochs, cosine decay to
-  ``eta_min`` thereafter) — preferred by the project_description for
-  joint calibration runs.
+* **Loss weighting (CRITICAL).** ``loss_weights.futures = 0.01`` so
+  the futures MSE (raw scale ~10^3 on $-prices) doesn't drown out the
+  yield-curve MSE (raw scale ~10^-4 on decimals). The components are
+  still logged unweighted under ``loss_components`` so you can read
+  the underlying fit quality on its own scale.
 
-* **Solver**: ``custom_euler`` — ~10× faster than torchsde for the
-  Euler scheme used throughout.
+* **Scheduler**: ``warmup_cosine`` (20 warmup epochs, cosine decay to
+  ``eta_min = 1e-5``) — preferred for joint calibration runs.
 
-Note on memory
---------------
-On a 16 GB CPU machine this configuration sits at ~3–4 GB peak. If you
-need more headroom, drop ``batch_window`` to 8 first (halves the
-simulate tensor), then ``n_paths`` to 384. Avoid dropping ``dt`` —
-the discretisation bias is hard to recover.
+* **Solver**: ``custom_euler`` — ~10–15× faster than torchsde for the
+  Euler scheme used throughout (``optimization_report.md``).
 
-Note on the joint-loss imbalance
---------------------------------
-At init the futures loss (~thousands) dominates the yield loss (~tenths
-of a percent²). Until `λ_y, λ_f` are exposed on TrainerCfg (see
-``optimization_plan.md`` §10.1 P1), this run effectively fits futures.
-Use the YC-only baseline if you need a clean yield-curve fit first.
+* **Encoder**: bi-LSTM 2×128 with ``rmsnorm`` output normalisation.
+  RMSNorm drops the mean-subtraction step of LayerNorm and tends to
+  be slightly cheaper while behaving comparably (Zhang & Sennrich,
+  2019).
 
 Run from the repo root:
 
@@ -70,21 +80,34 @@ from src.configs import (
 
 BOND_FEAT_DIM = 8
 
+# Fixed structural hparams (not gridded). Defining them up here keeps the
+# search width explicit ("only 4 trials") and the magic numbers in one
+# place for the docstring above.
+LATENT_DIM = 32
+
 
 def main() -> None:
     # -------------------------------------------------------------------
-    # Dates — 10-year training window, 1-quarter held-out evaluation
+    # Dates — 8.5-year training window starting 2016-01-01 (user spec)
     # -------------------------------------------------------------------
-    train_start = datetime(2015, 1, 1)
+    train_start = datetime(2016, 1, 1)
     train_end   = datetime(2024, 6, 30)
     eval_start  = datetime(2024, 7, 1)
     eval_end    = datetime(2024, 9, 30)
 
     # -------------------------------------------------------------------
-    # Device — auto-detect CUDA, fall back to CPU
+    # Device — expected GPU. Falls back to CPU only as a safety net so
+    # the script doesn't crash on machines without CUDA, but the hparams
+    # below assume CUDA is available (AMP, gradient checkpointing chunks).
     # -------------------------------------------------------------------
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
+    if device.type != "cuda":
+        print(
+            "WARNING: GPU not detected. This grid is sized for GPU; "
+            "consider lowering batch_window or n_paths if you really "
+            "intend to run it on CPU."
+        )
 
     # -------------------------------------------------------------------
     # Data
@@ -95,7 +118,7 @@ def main() -> None:
 
     data_cfg = DataLoaderCfg(
         data_path=data_path,
-        start_date=train_start - timedelta(days=150),    # extra room for the lookback
+        start_date=train_start - timedelta(days=200),    # extra room for the lookback
         end_date=eval_end + timedelta(days=30),
         max_maturity=10,
         enable_yield=True,
@@ -106,10 +129,13 @@ def main() -> None:
     dl = MarketDataLoader(data_cfg)
 
     # -------------------------------------------------------------------
-    # Base encoder — simple, bi-LSTM. 64 hidden units, 2 layers.
+    # Base encoder — simple, bi-LSTM. 2 layers, 128 hidden units.
+    # `out_norm="rmsnorm"` exercises the new pre-norm option added to
+    # MambaBlock / the encoder out_norm registry. Switch to "layernorm"
+    # if you want the previous behaviour.
     # -------------------------------------------------------------------
     base_enc = EncoderCfg(mode="simple")
-    base_enc.out_norm = "layernorm"
+    base_enc.out_norm = "rmsnorm"
     base_enc.net = {
         "type": "lstm",
         "n_layers": 2,
@@ -123,8 +149,9 @@ def main() -> None:
     # Base NSDE config — overrides per trial set `type` and `diffusion`.
     # -------------------------------------------------------------------
     base_nsde = NSDECfg(type="simple", noise_type="diagonal")
-    base_nsde.solver = "custom_euler"            # ~10x faster than torchsde
-    base_nsde.dt = 1 / 252                       # solver step  (≤ trainer.dt)
+    base_nsde.solver = "custom_euler"           # ~10-15x faster than torchsde
+    base_nsde.dt = 1 / 252                      # solver step on the 252-day year
+    base_nsde.checkpoint_chunk_size = 8         # gradient checkpointing on SDE
 
     common_drift_net = {
         "type": "mlp",
@@ -146,9 +173,9 @@ def main() -> None:
     base_tr.run_name = "YCFut_grid_tier1"
     base_tr.log_every_n_windows = 20
 
-    # MC + window sizing — see "Note on memory" in the module docstring
+    # MC + window sizing — GPU memory budget
     base_tr.n_paths = 512
-    base_tr.batch_window = 32
+    base_tr.batch_window = 16
     base_tr.window_step = 4
     base_tr.accumulate_windows = 2
     base_tr.dt = 1 / 128
@@ -157,12 +184,20 @@ def main() -> None:
     base_tr.lookback = 64
     base_tr.lookback_freq = 2
 
+    # Per-target loss weights — the futures branch is on a much larger
+    # scale than yields/short-rate, so we down-weight it to keep all
+    # three components contributing to the gradient. Raw components are
+    # still logged unweighted under `loss_components` for monitoring.
+    base_tr.loss_weights.yield_curve = 1.0
+    base_tr.loss_weights.short_rate  = 1.0
+    base_tr.loss_weights.futures     = 0.01
+
     # Optimiser — adamw with a single learning rate (no grid axis)
     base_tr.optimizer.name = "adamw"
     base_tr.optimizer.params = {"lr": 1e-3, "weight_decay": 1e-4}
 
-    # Scheduler — warmup_cosine with 5 warmup epochs and cosine decay to
-    # eta_min over the remaining (max_epochs - warmup_epochs) epochs.
+    # Scheduler — warmup_cosine with 20 warmup epochs and cosine decay
+    # to eta_min over the remaining (max_epochs - warmup_epochs) epochs.
     base_tr.scheduler.name = "warmup_cosine"
     base_tr.scheduler.params = {
         "warmup_epochs": 20,
@@ -177,8 +212,8 @@ def main() -> None:
     base_tr.compile_nsde = False
     base_tr.grad_clip_norm = 1.0
 
-    # Early stopping — 12 epochs of patience on the EMA-smoothed train
-    # loss. Warmup epochs (5) won't trigger early-stop on their own.
+    # Early stopping — 20 epochs of patience on the EMA-smoothed train
+    # loss. Warmup epochs (20) won't trigger early-stop on their own.
     base_tr.early_stopping.enabled = True
     base_tr.early_stopping.patience = 20
     base_tr.early_stopping.min_delta = 1e-4
@@ -190,25 +225,25 @@ def main() -> None:
     base_tr.checkpoint.max_to_keep = 3
 
     # -------------------------------------------------------------------
-    # BondNet — passed via `base_bondnet_cfg` (math_review.md §8). The
-    # gridsearch keeps `bondnet.latent_dim` in sync with the per-trial
-    # `model.latent_dim` choice automatically.
+    # BondNet — passed via `base_bondnet_cfg`. The gridsearch keeps
+    # `bondnet.latent_dim` in sync with the per-trial `model.latent_dim`
+    # choice automatically.
     # -------------------------------------------------------------------
     base_bondnet = SimpleBondNetCfg(
-        latent_dim=64,                       # overwritten per trial
+        latent_dim=LATENT_DIM,
         bond_feat_dim=BOND_FEAT_DIM,
-        latent_n_layers=2, 
+        latent_n_layers=2,
         latent_n_units=128,
-        bond_n_layers=2,   
+        bond_n_layers=2,
         bond_n_units=64,
-        fusion_n_layers=2, 
+        fusion_n_layers=2,
         fusion_n_units=128,
         activation="silu",
         output_positive=True,
     )
 
     # -------------------------------------------------------------------
-    # Grid — 2 × 2 × 2 = 8 trials (LR deliberately NOT in the grid)
+    # Grid — 2 × 2 = 4 trials (kept small per project guidance)
     # -------------------------------------------------------------------
     diffusion_small = {
         "type": "mlp",
@@ -222,9 +257,8 @@ def main() -> None:
     }
 
     param_grid = {
-        "model.latent_dim":  [16, 32],
-        "nsde.type":         ["simple", "ou"],
-        "nsde.diffusion":    [diffusion_small, diffusion_big],
+        "nsde.type":      ["simple", "ou"],
+        "nsde.diffusion": [diffusion_small, diffusion_big],
     }
 
     search = OptunaGridSearch(
@@ -236,6 +270,7 @@ def main() -> None:
         base_bondnet_cfg=base_bondnet,
         model_cls=ShortRateModel,
         trainer_cls=Trainer,
+        latent_dim=LATENT_DIM,            # fixed across trials
         direction="minimize",
         seed=0,
         study_name="YCFut_tier1",

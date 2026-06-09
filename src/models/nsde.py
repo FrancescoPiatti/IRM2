@@ -284,6 +284,15 @@ class BaseNSDE(nn.Module):
         -------
         Tensor
             Simulated paths, shape (n_paths, T, latent_dim).
+
+        Notes
+        -----
+        If ``self.cfg.checkpoint_chunk_size`` is positive, the Euler
+        iteration is run in chunks under
+        ``torch.utils.checkpoint.checkpoint`` so that the autograd graph
+        only holds chunk-boundary states. Brownian increments still
+        replay identically on backward (default
+        ``preserve_rng_state=True``).
         """
         n_paths = z0.size(0)
         n_steps = ts.numel()
@@ -295,30 +304,72 @@ class BaseNSDE(nn.Module):
         sqrt_dts = [d ** 0.5 for d in dts]
         t_vals = ts[:-1].tolist()                   # left-endpoint of each step
 
-        z = z0
-        out = [z]
-
         diagonal = self.noise_type == "diagonal"
         noise_dim = self.noise_dim
 
-        for i in range(n_steps - 1):
-            t_i = t_vals[i]
-            dt_i = dts[i]
-            sqrt_dt = sqrt_dts[i]
-
-            drift = self.f(t_i, z)                  # (n_paths, latent_dim)
-            diff  = self.g(t_i, z)                  # diagonal: (n_paths, latent_dim)
-                                                    # general : (n_paths, latent_dim, noise_dim)
-
+        # ------------------------------------------------------------------
+        # Single Euler step — used by both the no-checkpoint and the
+        # checkpointed branches below.
+        # ------------------------------------------------------------------
+        def _step(t_i: float, dt_i: float, sqrt_dt: float, z: Tensor) -> Tensor:
+            drift = self.f(t_i, z)
+            diff  = self.g(t_i, z)
             if diagonal:
                 dW = torch.randn_like(z) * sqrt_dt
-                z = z + drift * dt_i + diff * dW
-            else:
-                dW = torch.randn(n_paths, noise_dim, device=device, dtype=dtype) * sqrt_dt
-                # diff @ dW : (n_paths, latent_dim, noise_dim) @ (n_paths, noise_dim, 1)
-                z = z + drift * dt_i + torch.bmm(diff, dW.unsqueeze(-1)).squeeze(-1)
+                return z + drift * dt_i + diff * dW
+            dW = torch.randn(n_paths, noise_dim, device=device, dtype=dtype) * sqrt_dt
+            return z + drift * dt_i + torch.bmm(diff, dW.unsqueeze(-1)).squeeze(-1)
 
-            out.append(z)
+        chunk = getattr(self.cfg, "checkpoint_chunk_size", None)
+        use_checkpointing = bool(chunk) and chunk > 0 and self.training and z0.requires_grad
+
+        # ------------------------------------------------------------------
+        # Plain (no-checkpoint) path
+        # ------------------------------------------------------------------
+        if not use_checkpointing:
+            z = z0
+            out = [z]
+            for i in range(n_steps - 1):
+                z = _step(t_vals[i], dts[i], sqrt_dts[i], z)
+                out.append(z)
+            return torch.stack(out, dim=1)          # (n_paths, T, latent_dim)
+
+        # ------------------------------------------------------------------
+        # Checkpointed path: run K-step chunks under
+        # ``torch.utils.checkpoint`` so only the chunk INPUT is saved.
+        # ------------------------------------------------------------------
+        from torch.utils.checkpoint import checkpoint
+
+        n_chunks = (n_steps - 1 + chunk - 1) // chunk
+        # We capture the per-chunk schedule into closures so backward
+        # recomputation uses the same step sizes / left-times.
+        out = [z0]
+        z = z0
+        for c in range(n_chunks):
+            start = c * chunk
+            end = min(start + chunk, n_steps - 1)        # exclusive
+            chunk_t  = t_vals[start:end]
+            chunk_dt = dts[start:end]
+            chunk_sd = sqrt_dts[start:end]
+
+            def _run_chunk(z_in, ct=chunk_t, cdt=chunk_dt, csd=chunk_sd):
+                zs = []
+                cur = z_in
+                for j in range(len(ct)):
+                    cur = _step(ct[j], cdt[j], csd[j], cur)
+                    zs.append(cur)
+                # Stack so that the entire chunk's outputs are materialised in
+                # the FORWARD (the autograd graph between chunks only needs
+                # the chunk-input z; intermediate activations are dropped).
+                return torch.stack(zs, dim=0)            # (K_c, n_paths, d_z)
+
+            chunk_out = checkpoint(_run_chunk, z, use_reentrant=False)
+            # chunk_out: (K_c, n_paths, d_z) — split back into per-step
+            # entries so the final ``torch.stack`` below produces the
+            # canonical (n_paths, T, d_z) layout.
+            for k in range(chunk_out.shape[0]):
+                out.append(chunk_out[k])
+            z = chunk_out[-1]
 
         return torch.stack(out, dim=1)              # (n_paths, T, latent_dim)
 

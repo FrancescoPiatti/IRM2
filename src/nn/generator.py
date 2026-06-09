@@ -135,6 +135,7 @@ def create_network_from_config(
             expand         = _cfg.get('expand', 2),
             dropout        = _cfg.get('dropout'),
             out_activation = _cfg.get('out_activation'),
+            norm_type      = _cfg.get('norm_type', 'layernorm'),
         )
 
     # ------------------------------------------------------------

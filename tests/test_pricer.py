@@ -29,11 +29,12 @@ from src.types.data_types import (
 
 
 def test_to_year_fraction_scalar():
-    # Calendar-year convention post math_review.md §2 — 366 calendar days
-    # between 2020-01-01 (leap year) and 2021-01-01 -> 366/365.25 ≈ 1.002.
+    # Single 252-day year convention used everywhere in the stack
+    # (user spec) — 366 calendar days between 2020-01-01 (leap year)
+    # and 2021-01-01 -> 366/252 ≈ 1.452.
     out = to_year_fraction(pd.Timestamp("2021-01-01"), pd.Timestamp("2020-01-01"))
     assert out.shape == (1,)
-    assert out.item() == pytest.approx(366 / 365.25, rel=1e-5)
+    assert out.item() == pytest.approx(366 / 252.0, rel=1e-5)
 
 
 def test_to_year_fraction_list():

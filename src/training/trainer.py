@@ -602,45 +602,52 @@ class Trainer:
             bondnet=_bondnet,
         )
 
+        # Per-target weights (math_review.md §1 + optimization_plan.md §10.1 P1).
+        # We log both the RAW component (for monitoring the underlying fit
+        # quality on its own scale) AND the WEIGHTED contribution to the
+        # actual training loss.
+        lw_y  = float(self.cfg.loss_weights.yield_curve)
+        lw_sr = float(self.cfg.loss_weights.short_rate)
+        lw_f  = float(self.cfg.loss_weights.futures)
+
         # -------------------------------------------------------
         # Yield curve target (canonical)
-        if snapshot.yield_curve is not None:
+        if snapshot.yield_curve is not None and lw_y > 0.0:
             if model_snapshot.yield_curve is None:
                 raise RuntimeError("price_snapshot returned yield_curve=None but snapshot.yield_curve is not None.")
 
             observed_yields = snapshot.yield_curve.yields
             model_yields = model_snapshot.yield_curve.yields
 
-            yield_loss = self.loss_fn(model_yields, observed_yields)
-            loss_components["yield"] = float(yield_loss.detach().cpu().item())
-            day_loss = day_loss + yield_loss
+            yield_loss_raw = self.loss_fn(model_yields, observed_yields)
+            loss_components["yield"] = float(yield_loss_raw.detach().cpu().item())
+            day_loss = day_loss + lw_y * yield_loss_raw
 
         # -------------------------------------------------------
         # Short rate target (optional)
-        if snapshot.short_rate is not None:
+        if snapshot.short_rate is not None and lw_sr > 0.0:
             if model_snapshot.short_rate is None:
                 raise RuntimeError("price_snapshot returned short_rate=None but snapshot.short_rate is not None.")
 
             observed_r = snapshot.short_rate.rate
             model_r = model_snapshot.short_rate.rate
 
-            short_rate_loss = self.loss_fn(model_r, observed_r)
-            loss_components["short_rate"] = float(short_rate_loss.detach().cpu().item())
-            day_loss = day_loss + short_rate_loss
-
+            sr_loss_raw = self.loss_fn(model_r, observed_r)
+            loss_components["short_rate"] = float(sr_loss_raw.detach().cpu().item())
+            day_loss = day_loss + lw_sr * sr_loss_raw
 
         # -------------------------------------------------------
         # Futures target (optional)
-        if snapshot.futures is not None:
+        if snapshot.futures is not None and lw_f > 0.0:
             if model_snapshot.futures is None:
                 raise RuntimeError("price_snapshot returned futures=None but snapshot.futures is not None.")
 
             observed_futures = snapshot.futures.prices
             model_futures = model_snapshot.futures.prices
 
-            futures_loss = self.loss_fn(model_futures, observed_futures)
-            loss_components["futures"] = float(futures_loss.detach().cpu().item())
-            day_loss = day_loss + futures_loss
+            fut_loss_raw = self.loss_fn(model_futures, observed_futures)
+            loss_components["futures"] = float(fut_loss_raw.detach().cpu().item())
+            day_loss = day_loss + lw_f * fut_loss_raw
 
         # -------------------------------------------------------
         # Bonds / Options (later)

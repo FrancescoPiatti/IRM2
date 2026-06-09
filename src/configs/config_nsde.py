@@ -87,6 +87,15 @@ class NSDECfg:
     atol: float = 1e-6
     dt: float = 1 / 252
 
+    # Gradient checkpointing on the ``custom_euler`` solver loop. If
+    # positive, the Euler iteration is run in chunks of
+    # ``checkpoint_chunk_size`` steps; only the chunk INPUTS are saved
+    # for backward, and each chunk is re-simulated on the backward pass
+    # to reconstruct activations. Trades ~2x compute for an
+    # (n_steps / chunk_size)× reduction of the SDE autograd graph
+    # footprint. Ignored by the ``torchsde`` backend.
+    checkpoint_chunk_size: Optional[int] = None
+
     # Simple-only networks
     drift: Optional[Mapping[str, Any]] = None
 

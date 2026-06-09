@@ -24,6 +24,7 @@ from src.configs.config_loader import DataLoaderCfg
 from src.configs.config_trainer import OptimizerCfg
 from src.configs.config_trainer import EarlyStoppingCfg
 from src.configs.config_trainer import LossCfg
+from src.configs.config_trainer import LossWeightsCfg
 from src.configs.config_trainer import SchedulerCfg
 from src.configs.config_trainer import TrainerCfg
 
@@ -48,6 +49,7 @@ __all__ = [
     "OptimizerCfg",
     "EarlyStoppingCfg",
     "LossCfg",
+    "LossWeightsCfg",
     "SchedulerCfg",
     "TrainerCfg"
 ]

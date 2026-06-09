@@ -70,4 +70,6 @@ DEFAULT_CONFIG_MAMBA = {
     'expand': 2,
     'dropout': 0.1,
     'out_activation': 'Identity',
+    # Pre-norm inside each Mamba block. One of {"layernorm", "rmsnorm"}.
+    'norm_type': 'layernorm',
 }

@@ -10,11 +10,15 @@ from ..types.types_utils import Date
 from ..types.data_types import BondFeatures
 
 
-# Calendar-day basis used to convert (maturity_date - asof_date).days into
-# a year fraction. This matches the yield-curve maturity convention
-# (SVENY01 = 1 calendar-year zero), so a 1-calendar-year bond yields
-# years_to_maturity = 1.0 in the BondNet features.
-_CALENDAR_DAYS_PER_YEAR = 365.25
+# Day-count basis used to convert (maturity_date - asof_date).days into a
+# year fraction. The whole stack uses 252 days/year so the BondNet
+# features, pricer year-fractions, and `Trainer.dt = 1/252` agree
+# (user spec — single year convention everywhere). A 1-year bond
+# (252 trading-day deltas) therefore yields years_to_maturity = 1.0
+# in the BondNet features. Note that we *count* calendar days between
+# the two dates and divide by 252 — i.e. 252 acts as the year-fraction
+# normaliser, not as a working-day filter.
+_DAYS_PER_YEAR = 252.0
 
 
 @dataclass
@@ -183,12 +187,13 @@ class BondMetadataStore:
         coupon = df["coupon_rate"].to_numpy(dtype=np.float32)
         freq = df["coupon_frequency"].to_numpy(dtype=np.int64).astype(np.float32)
 
-        # Compute years_to_maturity in CALENDAR years so the bond feature is
-        # on the same scale as the yield-curve maturities (a 1-calendar-year
-        # bond yields a feature value of 1.0). `business_days_per_year` is
+        # Compute years_to_maturity using the single 252-day year convention
+        # shared by the loader, pricer, and trainer (user spec). A 1-year
+        # bond yields a feature value of 1.0. `business_days_per_year` is
         # preserved on the store for naming / future use, but the actual
-        # year-fraction computation uses calendar days (math_review.md §2).
-        years_to_maturity = np.maximum(maturity_ord - asof_ord, 0) / _CALENDAR_DAYS_PER_YEAR
+        # year-fraction divisor is always `_DAYS_PER_YEAR = 252` so the
+        # whole stack agrees.
+        years_to_maturity = np.maximum(maturity_ord - asof_ord, 0) / _DAYS_PER_YEAR
 
         # Approximate coupon-cycle features from ytm and frequency only
         u = years_to_maturity * freq                           # ~ remaining coupon periods

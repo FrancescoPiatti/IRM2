@@ -224,11 +224,13 @@ class FuturesStore:
           - its `DLV_Date` is strictly after `date`, and
           - if `max_delivery_years` is provided: `DLV_Date - date <= max_delivery_years`
             (delivery within the simulation horizon), measured in
-            **calendar years** to match the yield-curve convention
-            (math_review.md §2).
+            **years with 252 days/year** to match the single
+            year-fraction convention used everywhere in the stack
+            (loader / pricer / trainer.dt = 1/252).
 
         ``business_days_per_year`` is kept on the signature for back-compat
-        but is not used in the horizon filter.
+        but is not used in the horizon filter — the divisor is hard-wired
+        to 252 here so the convention is identical to the pricer.
 
         Parameters
         ----------
@@ -261,9 +263,11 @@ class FuturesStore:
             if dlv <= ts:
                 continue
             if max_delivery_years is not None:
-                # Calendar-day delta -> calendar-year fraction (365.25 d/yr).
+                # Day delta -> year fraction using 252 days/year (the single
+                # convention used by the rest of the stack — pricer,
+                # bond_metadata_store, trainer.dt).
                 days = (dlv - ts).days
-                years = days / 365.25
+                years = days / 252.0
                 if years > float(max_delivery_years):
                     continue
             active.append(t)

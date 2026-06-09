@@ -82,6 +82,38 @@ class CheckpointCfg:
 
 
 @dataclass
+class LossWeightsCfg:
+    """
+    Per-target weights applied inside ``Trainer._get_loss``.
+
+    The joint training objective is
+
+    ::
+
+        L = λ_y · L_yield + λ_sr · L_short_rate + λ_f · L_fut
+
+    By default every weight is 1.0, so existing runs keep the unweighted
+    behaviour. For joint YC + futures training the futures loss runs
+    several orders of magnitude larger than the yield loss in the early
+    epochs (market futures sit near $120, BondNet at init outputs ~1);
+    dropping ``λ_f`` (e.g. 0.01) lets the yield curve fit first instead
+    of the gradient being dominated by the BondNet calibration error.
+
+    Attributes
+    ----------
+    yield_curve : float
+        Multiplier on the yield-curve MSE component.
+    short_rate : float
+        Multiplier on the short-rate MSE component.
+    futures : float
+        Multiplier on the futures MSE component.
+    """
+    yield_curve: float = 1.0
+    short_rate: float = 1.0
+    futures: float = 1.0
+
+
+@dataclass
 class EarlyStoppingCfg:
     """
     Early stopping configuration.
@@ -165,6 +197,7 @@ class TrainerCfg:
     optimizer: OptimizerCfg = field(default_factory=OptimizerCfg)
     scheduler: SchedulerCfg = field(default_factory=SchedulerCfg)
     loss: LossCfg = field(default_factory=LossCfg)
+    loss_weights: LossWeightsCfg = field(default_factory=LossWeightsCfg)
 
     # Runtime options
     use_amp: bool = False
@@ -222,6 +255,14 @@ class TrainerCfg:
         _check_positive_integer_value(self.lookback_slow, 'lookback_slow')
         _check_positive_integer_value(self.lookback_fast_freq, 'lookback_fast_freq')
         _check_positive_integer_value(self.lookback_slow_freq, 'lookback_slow_freq')
+
+        # Loss-weights sub-config — each weight must be non-negative
+        # (zero disables the corresponding target, which is the
+        # idiomatic way to "warm up on yields only").
+        for name in ("yield_curve", "short_rate", "futures"):
+            w = float(getattr(self.loss_weights, name))
+            if w < 0.0:
+                raise ValueError(f"loss_weights.{name} must be >= 0; got {w}.")
 
         # Early stopping sub-config
         if self.early_stopping.enabled:

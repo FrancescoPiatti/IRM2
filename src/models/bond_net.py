@@ -1,6 +1,7 @@
 # src/models/bond_net.py
 import torch
 from torch import Tensor
+from torch.nn import Linear
 from torch.nn import Module
 from torch.nn import Identity
 from torch.nn import Softplus
@@ -10,6 +11,31 @@ from ..nn.mlp import MLP
 from ..configs.config_bondnet import BaseBondNetCfg
 from ..configs.config_bondnet import SimpleBondNetCfg
 from ..configs.config_bondnet import FiLMBondNetCfg
+
+
+def _init_pricing_head(head: Module, level: float, weight_scale: float = 0.01) -> None:
+    """
+    Initialise a pricing head to output ~``level`` at the start of training.
+
+    Finds the last ``nn.Linear`` in ``head``, shrinks its weight by
+    ``weight_scale`` and sets its bias to ``level``. With a Softplus output
+    (``output_positive=True``) the network then emits ``softplus(level) ≈
+    level`` for ``level >> 0``; with an Identity output it emits ``level``
+    directly. Starting near the deliverable-bond price level (~100) keeps
+    the head's weights — and the gradient it pushes back into the SDE
+    latent path — small, which is what prevents the post-warmup blow-up.
+    No-op if ``head`` has no ``nn.Linear``.
+    """
+    last_linear = None
+    for m in head.modules():
+        if isinstance(m, Linear):
+            last_linear = m
+    if last_linear is None:
+        return
+    with torch.no_grad():
+        last_linear.weight.mul_(float(weight_scale))
+        if last_linear.bias is not None:
+            last_linear.bias.fill_(float(level))
 
 
 class SimpleBondNet(Module):
@@ -71,6 +97,10 @@ class SimpleBondNet(Module):
         )
 
         self.positive_head = Softplus() if cfg.output_positive else Identity()
+
+        # Optional near-target init so the net starts at the bond-price level.
+        if getattr(cfg, "output_init_level", None) is not None:
+            _init_pricing_head(self.fusion_head, float(cfg.output_init_level))
 
     def forward(self, z: Tensor, bond_features: Tensor) -> Tensor:
         """
@@ -154,6 +184,10 @@ class FiLMBondNet(Module):
         )
 
         self.positive_head = Softplus() if cfg.output_positive else Identity()
+
+        # Optional near-target init so the net starts at the bond-price level.
+        if getattr(cfg, "output_init_level", None) is not None:
+            _init_pricing_head(self.head, float(cfg.output_init_level))
 
     def forward(self, z: Tensor, bond_features: Tensor) -> Tensor:
         """

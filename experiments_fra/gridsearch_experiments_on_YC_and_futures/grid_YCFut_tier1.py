@@ -303,6 +303,14 @@ def main() -> None:
         fusion_n_units=128,
         activation="silu",
         output_positive=True,
+        # NEAR-TARGET INIT — the key stability fix for the joint run.
+        # Deliverable bonds sit near par (~100); a zero-init Softplus head
+        # starts at ~0.69 and has to grow its weights ~150x to reach the
+        # bond-price level. Those huge weights amplify the gradient flowing
+        # back into the SDE latent path and blow training up right after
+        # warmup (the 82% → 100% skip wall at epoch 7-8). Starting the head
+        # at ~100 keeps its weights — and that gradient — small.
+        output_init_level=100.0,
     )
 
     # -------------------------------------------------------------------

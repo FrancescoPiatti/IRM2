@@ -27,6 +27,16 @@ class BaseBondNetCfg:  # noqa: D101 — see subclasses
         Dropout probability used in MLP blocks.
     output_positive : bool
         If True, apply Softplus to the final output.
+    output_init_level : float | None
+        If set, initialise the pricing head so the network outputs roughly
+        this value at the start of training (bias set to the level, output
+        weights shrunk). Deliverable bond prices sit near par (~100), but
+        a zero-initialised Softplus head starts at ~0.69, so the net would
+        otherwise have to grow its weights ~150x to reach the target — and
+        those large weights amplify the gradient flowing back through the
+        SDE latent path, which is what blows training up after a few
+        epochs. Starting near the target keeps the weights (and gradients)
+        small. ``None`` keeps the default PyTorch init.
     """
     latent_dim: int
     bond_feat_dim: int
@@ -35,6 +45,7 @@ class BaseBondNetCfg:  # noqa: D101 — see subclasses
     out_activation: Union[str, Module] = Identity
     dropout: Optional[float] = 0.0
     output_positive: bool = False
+    output_init_level: Optional[float] = None
 
 
 @dataclass

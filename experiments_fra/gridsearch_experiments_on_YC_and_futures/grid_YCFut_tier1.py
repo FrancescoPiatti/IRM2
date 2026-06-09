@@ -44,12 +44,19 @@ Design choices
                                          confirmed on a config, you can
                                          flip this back on for the
                                          throughput win.
-    - ``checkpoint_chunk_size = None`` — Gradient checkpointing is
-                                         also off here. The §2 NSDE
-                                         work already removed most of
-                                         the memory pressure; turn this
-                                         back on (e.g. 8) only if you
-                                         hit OOM on a bigger latent dim.
+    - ``checkpoint_chunk_size = 8``    — Gradient checkpointing on the
+                                         SDE Euler loop is back ON here
+                                         (it was the AMP+checkpointing
+                                         *combination* that caused NaN,
+                                         not checkpointing itself —
+                                         ``test_custom_euler_checkpointed_matches_uncheckpointed``
+                                         confirms fp32 checkpointing is
+                                         bitwise-equivalent). Without it
+                                         the full fp32 autograd graph
+                                         doesn't fit on a single GPU at
+                                         ``latent_dim=64`` /
+                                         ``batch_window=16`` /
+                                         ``n_paths=512``.
     - ``grad_clip_norm = 0.5``         — Tighter than the 1.0 default
                                          because we observed parameter
                                          drift even with clip=1.0 under
@@ -164,10 +171,14 @@ def main() -> None:
     base_nsde = NSDECfg(type="simple", noise_type="diagonal")
     base_nsde.solver = "custom_euler"           # ~10-15x faster than torchsde
     base_nsde.dt = 1 / 252                      # solver step on the 252-day year
-    # Gradient checkpointing is OFF for the stability run. With ``use_amp=False``
-    # below we don't actually need it to fit in VRAM at latent_dim=64. Flip to
-    # 8 if you later raise latent_dim or n_paths and hit OOM.
-    base_nsde.checkpoint_chunk_size = None
+    # Gradient checkpointing on the SDE Euler loop. The NaN issue was the
+    # AMP + checkpointing *combination*; checkpointing on its own is
+    # bitwise-equivalent in fp32 (covered by the
+    # ``test_custom_euler_checkpointed_matches_uncheckpointed`` test). We
+    # need it back on to fit the fp32 autograd graph at latent_dim=64.
+    # If you still hit OOM after this, drop ``base_tr.batch_window`` to 8
+    # first (halves the saved chunk-input tensor), then ``n_paths`` to 256.
+    base_nsde.checkpoint_chunk_size = 8
 
     common_drift_net = {
         "type": "mlp",

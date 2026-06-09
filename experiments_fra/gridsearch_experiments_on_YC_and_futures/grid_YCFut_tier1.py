@@ -35,22 +35,35 @@ Design choices
     - ``lookback = 64`` / ``freq = 2`` — ~one quarter of YC history.
     - ``epochs = 100``                 — warmup_cosine(warmup=20, max=100)
                                          + patience=20 early stopping.
-    - ``use_amp = True`` on CUDA       — fp16 inside encoder + drift /
-                                         diffusion, fp32 at the
-                                         pricer / loss boundary.
-    - ``checkpoint_chunk_size = 8``    — gradient checkpointing on the
-                                         SDE Euler loop (cuts the
-                                         autograd graph footprint
-                                         ~(n_steps/8)× at ~2× compute).
-    - ``grad_clip_norm = 1.0``         — load-bearing for NaN-free runs
-                                         (see ``code_review_report.md``
-                                         §2.1).
+    - ``use_amp = False``              — AMP is deliberately OFF here.
+                                         With ``latent_dim=64``, the
+                                         1280-step Euler loop running
+                                         under autocast pushed gradients
+                                         to NaN within a handful of
+                                         windows. Once stability is
+                                         confirmed on a config, you can
+                                         flip this back on for the
+                                         throughput win.
+    - ``checkpoint_chunk_size = None`` — Gradient checkpointing is
+                                         also off here. The §2 NSDE
+                                         work already removed most of
+                                         the memory pressure; turn this
+                                         back on (e.g. 8) only if you
+                                         hit OOM on a bigger latent dim.
+    - ``grad_clip_norm = 0.5``         — Tighter than the 1.0 default
+                                         because we observed parameter
+                                         drift even with clip=1.0 under
+                                         the aggressive joint loss.
 
-* **Loss weighting (CRITICAL).** ``loss_weights.futures = 0.01`` so
+* **Loss weighting (CRITICAL).** ``loss_weights.futures = 1e-4`` so
   the futures MSE (raw scale ~10^3 on $-prices) doesn't drown out the
-  yield-curve MSE (raw scale ~10^-4 on decimals). The components are
+  yield-curve MSE (raw scale ~10^-4 on decimals). 1e-2 was still ~10^5
+  larger than the yield contribution at init and contributed to the
+  gradient blow-up observed in the first GPU run. The components are
   still logged unweighted under ``loss_components`` so you can read
-  the underlying fit quality on its own scale.
+  the underlying fit quality on its own scale. If you want a clean
+  yields-only warm-up run, set this to ``0.0`` — the trainer
+  short-circuits the futures branch entirely when the weight is zero.
 
 * **Scheduler**: ``warmup_cosine`` (20 warmup epochs, cosine decay to
   ``eta_min = 1e-5``) — preferred for joint calibration runs.
@@ -151,7 +164,10 @@ def main() -> None:
     base_nsde = NSDECfg(type="simple", noise_type="diagonal")
     base_nsde.solver = "custom_euler"           # ~10-15x faster than torchsde
     base_nsde.dt = 1 / 252                      # solver step on the 252-day year
-    base_nsde.checkpoint_chunk_size = 8         # gradient checkpointing on SDE
+    # Gradient checkpointing is OFF for the stability run. With ``use_amp=False``
+    # below we don't actually need it to fit in VRAM at latent_dim=64. Flip to
+    # 8 if you later raise latent_dim or n_paths and hit OOM.
+    base_nsde.checkpoint_chunk_size = None
 
     common_drift_net = {
         "type": "mlp",
@@ -190,11 +206,13 @@ def main() -> None:
     # still logged unweighted under `loss_components` for monitoring.
     base_tr.loss_weights.yield_curve = 1.0
     base_tr.loss_weights.short_rate  = 1.0
-    base_tr.loss_weights.futures     = 0.01
+    base_tr.loss_weights.futures     = 1e-4
 
-    # Optimiser — adamw with a single learning rate (no grid axis)
+    # Optimiser — adamw with a single learning rate (no grid axis). LR
+    # dropped from 1e-3 to 5e-4 for the stability run; once a config is
+    # known to converge you can push it back up.
     base_tr.optimizer.name = "adamw"
-    base_tr.optimizer.params = {"lr": 1e-3, "weight_decay": 1e-4}
+    base_tr.optimizer.params = {"lr": 5e-4, "weight_decay": 1e-4}
 
     # Scheduler — warmup_cosine with 20 warmup epochs and cosine decay
     # to eta_min over the remaining (max_epochs - warmup_epochs) epochs.
@@ -205,12 +223,13 @@ def main() -> None:
         "eta_min": 1e-5,
     }
 
-    # AMP only on CUDA. compile_nsde kept off — the in-house Euler is
-    # already fast and torch.compile interacts poorly with autograd-heavy
-    # SDE loops.
-    base_tr.use_amp = device.type == "cuda"
+    # AMP is deliberately OFF for the stability run — see the
+    # docstring at the top of the file. Re-enable with
+    # ``base_tr.use_amp = device.type == "cuda"`` once you've
+    # established a configuration that converges cleanly without it.
+    base_tr.use_amp = False
     base_tr.compile_nsde = False
-    base_tr.grad_clip_norm = 1.0
+    base_tr.grad_clip_norm = 0.5
 
     # Early stopping — 20 epochs of patience on the EMA-smoothed train
     # loss. Warmup epochs (20) won't trigger early-stop on their own.

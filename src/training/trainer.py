@@ -779,16 +779,25 @@ class Trainer:
         # losses) stays in float32 per project_description §15.
         for i, date in enumerate(batch_dates):
             if window_paths is not None:
-                day_loss = self._forward_one_date(
+                day_loss, components = self._forward_one_date(
                     date,
                     precomputed_latent_repr=window_paths[i],
+                    return_components=True,
                 )
             else:
-                day_loss = self._forward_one_date(date)
+                day_loss, components = self._forward_one_date(
+                    date,
+                    return_components=True,
+                )
 
-            # Skip day if NaN/Inf loss
+            # Skip day if NaN/Inf loss. We include the per-target
+            # components in the log line so the user can tell which
+            # branch produced the NaN (yield / short_rate / futures)
+            # without having to re-run with extra instrumentation.
             if self.cfg.skip_nan_loss and (torch.isnan(day_loss) or torch.isinf(day_loss)):
-                self.logger.warning(f"Skipping NaN/Inf loss at date={date}")
+                self.logger.warning(
+                    f"Skipping NaN/Inf loss at date={date} components={components}"
+                )
                 continue
 
             window_loss = window_loss + day_loss
@@ -813,23 +822,58 @@ class Trainer:
     def _optimizer_step(self):
         """
         Apply one optimizer update (with optional AMP + grad clipping).
+
+        Includes a defensive NaN/Inf guard: if any gradient is non-finite
+        after the (optional) AMP unscale, the step is *skipped* — the
+        gradients are zeroed and the AMP scaler is told the step failed
+        (so it can shrink the loss scale next round). This prevents a
+        single bad backward from polluting the Adam moments and turning
+        every subsequent window into NaN.
         """
-        # (AMP) unscale grads so clipping operates in true scale
+        # (AMP) unscale grads so clipping operates in true scale.
         if self.use_amp:
             self.scaler.unscale_(self.optimizer)
 
-        # (Optional) clip global grad norm for stability
+        # Defensive NaN/Inf guard. Under AMP, ``scaler.step`` already
+        # checks for non-finite grads internally and is a no-op when it
+        # finds them — but we still want the same behaviour in the
+        # no-AMP path (and an explicit log line either way so users can
+        # see when it fires). Scanning is O(params) and the cost is
+        # negligible compared with a single backward pass.
+        bad = False
+        for p in self.model.parameters():
+            if p.grad is None:
+                continue
+            if not torch.isfinite(p.grad).all():
+                bad = True
+                break
+
+        if bad:
+            # Drop the polluted gradients and tell the AMP scaler the
+            # step failed (so its loss scale halves) — but do NOT touch
+            # the Adam moments, which are still clean from before.
+            self.logger.warning(
+                "Skipping optimizer step: non-finite gradient detected."
+            )
+            self.optimizer.zero_grad(set_to_none=True)
+            if self.use_amp:
+                # ``scaler.update`` shrinks the loss scale when no
+                # successful step was reported this round.
+                self.scaler.update()
+            return
+
+        # (Optional) clip global grad norm for stability.
         if self.grad_clip_norm is not None:
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), float(self.grad_clip_norm))
 
-        # Optimizer step (AMP-safe if enabled)
+        # Optimizer step (AMP-safe if enabled).
         if self.use_amp:
             self.scaler.step(self.optimizer)
             self.scaler.update()
         else:
             self.optimizer.step()
 
-        # Zero gradients (set_to_none=True for performance)
+        # Zero gradients (set_to_none=True for performance).
         self.optimizer.zero_grad(set_to_none=True)
 
 

@@ -96,16 +96,41 @@ class NSDECfg:
     # footprint. Ignored by the ``torchsde`` backend.
     checkpoint_chunk_size: Optional[int] = None
 
-    # Optional smooth bounds on the SDE coefficients. When set to a
-    # positive float, the drift is squashed via
-    # ``drift_bound * tanh(raw / drift_bound)`` and the diffusion via
-    # ``diffusion_bound * tanh(raw / diffusion_bound)``. This keeps the
-    # latent state from running away over a long Euler unroll — the
-    # dominant source of exploding / non-finite gradients through the
-    # 100s-to-1000s-step backward chain. ``None`` (default) keeps the
-    # unbounded behaviour. ``tanh`` is near-identity for small arguments,
-    # so a generous bound (e.g. 5-10) barely perturbs normal dynamics
-    # while still capping blow-ups.
+    # Multiplicative coefficient SCALES — the principled way to set the
+    # natural magnitude of the SDE coefficients (preferred over the hard
+    # ``*_bound`` clamps below). The drift network output is multiplied by
+    # ``drift_scale`` and the diffusion network output by
+    # ``diffusion_scale``. Unlike a tanh bound these do NOT saturate: the
+    # coefficient starts at the chosen scale but the network can still
+    # grow or shrink it freely (gradients flow everywhere). For a
+    # short-rate model the diffusion scale fixes the implied rate vol:
+    # ``sigma_r ≈ ||decoder_w|| * diffusion_scale``, so a realistic
+    # ~1 %/yr vol means ``diffusion_scale ≈ 0.02`` (see
+    # model_diagnosis_report.md). Default 1.0 = no rescaling.
+    drift_scale: float = 1.0
+    diffusion_scale: float = 1.0
+
+    # OU-only: hard cap on the mean-reversion rate kappa, applied as
+    # ``kappa = mean_reversion_max * tanh(kappa / mean_reversion_max)``
+    # (kappa is >= 0 from softplus, so this maps [0, inf) -> [0, max)).
+    # WHY THIS MATTERS: the day-specific signal enters the model only
+    # through z0 (the encoder output = the SDE initial condition). Mean
+    # reversion pulls z away from z0 toward theta with timescale 1/kappa,
+    # *erasing* z0. The yield y(T) integrates r over [0, T]; once
+    # T >> 1/kappa the curve no longer depends on the day's input, so it
+    # collapses to a (near-)constant, day-independent curve — the "OU
+    # gives constant yields" failure. Capping kappa (e.g. 0.3 -> timescale
+    # >= ~3y) keeps z0 alive across the 1-10y curve. ``None`` = uncapped.
+    mean_reversion_max: Optional[float] = None
+
+    # Optional HARD bounds on the SDE coefficients (applied AFTER the
+    # scales above). When set to a positive float, the drift is squashed
+    # via ``drift_bound * tanh(raw / drift_bound)`` and likewise for the
+    # diffusion. This is a blunt safety clamp against runaway dynamics —
+    # it caps the coefficient but SATURATES (kills gradients at the
+    # boundary), so it can fight learning if the model legitimately needs
+    # a larger coefficient. Prefer ``*_scale`` for setting magnitude and
+    # leave these ``None`` unless you actually see a blow-up.
     drift_bound: Optional[float] = None
     diffusion_bound: Optional[float] = None
 
@@ -162,6 +187,12 @@ class NSDECfg:
         _check_positive_value(self.dt, 'cfg.dt')
         _check_positive_value(self.rtol, 'cfg.rtol')
         _check_positive_value(self.atol, 'cfg.atol')
+
+        # Coefficient scales — strictly positive.
+        _check_positive_value(self.drift_scale, 'cfg.drift_scale')
+        _check_positive_value(self.diffusion_scale, 'cfg.diffusion_scale')
+        if self.mean_reversion_max is not None:
+            _check_positive_value(self.mean_reversion_max, 'cfg.mean_reversion_max')
 
         # Optional coefficient bounds — positive when provided.
         if self.drift_bound is not None:

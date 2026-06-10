@@ -645,7 +645,15 @@ class Trainer:
             observed_futures = snapshot.futures.prices
             model_futures = model_snapshot.futures.prices
 
-            fut_loss_raw = self.loss_fn(model_futures, observed_futures)
+            if getattr(self.cfg, "futures_relative_loss", False):
+                # Dimensionless relative error so λ_f is comparable to λ_y.
+                # ``observed`` is detached (it's data, not a parameter) and
+                # floored to avoid a divide-by-zero on a stray 0 price.
+                denom = observed_futures.detach().abs().clamp_min(1e-6)
+                rel = (model_futures - observed_futures) / denom
+                fut_loss_raw = (rel ** 2).mean()
+            else:
+                fut_loss_raw = self.loss_fn(model_futures, observed_futures)
             loss_components["futures"] = float(fut_loss_raw.detach().cpu().item())
             day_loss = day_loss + lw_f * fut_loss_raw
 

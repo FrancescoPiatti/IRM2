@@ -597,6 +597,16 @@ class ShortRateModel(nn.Module):
         except Exception:
             pass
 
+        # BondNet config (when present) so the model can be reconstructed
+        # for offline analysis without re-deriving the architecture from the
+        # state_dict. ``result_analyzer_v2`` reads this key.
+        if getattr(self, "bondnet", None) is not None:
+            try:
+                info["bondnet_config"] = _to_jsonable(getattr(self.bondnet, "cfg", None))
+                info["bondnet_class"] = type(self.bondnet).__name__
+            except Exception:
+                pass
+
         if self.training_info is not None:
             info["training_info"] = _to_jsonable(self.training_info)
 

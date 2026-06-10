@@ -221,6 +221,20 @@ class TrainerCfg:
     checkpoint: CheckpointCfg = field(default_factory=CheckpointCfg)
     early_stopping: EarlyStoppingCfg = field(default_factory=EarlyStoppingCfg)
 
+    # Loss shaping
+    # ------------
+    # When True, the futures term is computed as a RELATIVE error,
+    # ``mean(((model - market) / market)**2)``, instead of an absolute MSE
+    # on prices. Futures sit near $120, so an absolute MSE lives on a
+    # price² scale (~10²-10³) while the yield MSE is on a decimal² scale
+    # (~1e-5); even a tiny ``loss_weights.futures`` can't put them on a
+    # comparable footing. The relative error is dimensionless and O(1e-4)
+    # for a 1 % pricing error, so ``loss_weights`` become interpretable
+    # and ``λ_y = λ_f = 1`` actually balances yields against futures.
+    # Yields/short-rate stay ABSOLUTE (they're already on a natural [0,~0.06]
+    # decimal scale, and market yields can be ~0 → relative would blow up).
+    futures_relative_loss: bool = False
+
     # Safety options
     skip_nan_loss: bool = True
     log_every_n_windows: int = 1

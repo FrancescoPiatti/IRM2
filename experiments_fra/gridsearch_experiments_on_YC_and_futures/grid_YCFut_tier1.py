@@ -34,10 +34,18 @@ Design choices
                                          Short unroll = stable backprop
                                          (was 1/128 → 1280 steps, which
                                          exploded the gradient).
-    - ``nsde.drift_bound = 5``,
-      ``nsde.diffusion_bound = 2``     — smooth tanh bounds on the SDE
-                                         coefficients so the latent state
-                                         can't run away over the unroll.
+    - ``nsde.diffusion_scale = 0.02`` — sets the IMPLIED short-rate vol to
+                                         ~1.2 %/yr (sigma_r ~ 0.58*scale).
+                                         The key yield-curve fix: too large
+                                         a diffusion makes the convexity
+                                         term swamp every yield. A *scale*
+                                         (not a tanh bound) keeps gradients
+                                         flowing. See model_diagnosis_report.md.
+    - ``nsde.drift_scale = 0.5``      — natural magnitude of the drift
+                                         (the expectations curve).
+    - ``futures_relative_loss=True``  — futures loss is a dimensionless
+                                         relative error, so λ_y = λ_f = 1
+                                         balances yields against futures.
     - ``lookback = 64`` / ``freq = 2`` — ~one quarter of YC history.
     - ``epochs = 100``                 — warmup_cosine(warmup=20, max=100)
                                          + patience=20 early stopping.
@@ -68,15 +76,15 @@ Design choices
                                          drift even with clip=1.0 under
                                          the aggressive joint loss.
 
-* **Loss weighting (CRITICAL).** ``loss_weights.futures = 1e-4`` so
-  the futures MSE (raw scale ~10^3 on $-prices) doesn't drown out the
-  yield-curve MSE (raw scale ~10^-4 on decimals). 1e-2 was still ~10^5
-  larger than the yield contribution at init and contributed to the
-  gradient blow-up observed in the first GPU run. The components are
-  still logged unweighted under ``loss_components`` so you can read
-  the underlying fit quality on its own scale. If you want a clean
-  yields-only warm-up run, set this to ``0.0`` — the trainer
-  short-circuits the futures branch entirely when the weight is zero.
+* **Loss weighting (CRITICAL).** With ``futures_relative_loss=True`` the
+  futures term is a dimensionless relative error, so it lives on the same
+  O(1e-4) scale as the yield MSE and ``λ_y = λ_f = 1`` genuinely balances
+  the two. (Previously, absolute futures MSE on ~$120 prices was 10³-10⁵×
+  the yield contribution, so no small ``λ_f`` could balance them and the
+  model effectively fit futures only.) Components are still logged
+  unweighted under ``loss_components``. For a clean yields-only warm-up,
+  set ``loss_weights.futures = 0.0`` — the trainer short-circuits the
+  futures branch entirely when the weight is zero.
 
 * **Scheduler**: ``warmup_cosine`` (20 warmup epochs, cosine decay to
   ``eta_min = 1e-5``) — preferred for joint calibration runs.
@@ -185,16 +193,30 @@ def main() -> None:
     # autograd graph is already 4x smaller, so this is mostly insurance.
     base_nsde.checkpoint_chunk_size = 8
 
-    # SMOOTH COEFFICIENT BOUNDS — the key stability fix. Backprop through
-    # the multi-hundred-step Euler unroll multiplies one Jacobian per
-    # step; once the drift/diffusion grow, that product explodes to inf
-    # and the optimizer-step guard rejects every update (the "non-finite
-    # gradient" wall seen around epoch 8). Squashing the drift/diffusion
-    # with ``bound * tanh(raw / bound)`` keeps the latent state — and
-    # hence the Jacobians — in a sane range. The bounds are generous, so
-    # they're near-identity for normal dynamics and only bite on blow-ups.
-    base_nsde.drift_bound = 5.0
-    base_nsde.diffusion_bound = 2.0
+    # COEFFICIENT SCALES (not hard clamps) — set the *natural magnitude*
+    # of the SDE coefficients by construction, while leaving the network
+    # free to adapt them (no tanh saturation killing gradients). For this
+    # model the diffusion scale IS the implied rate vol:
+    # sigma_r ≈ ||decoder_w|| * diffusion_scale ≈ 0.58 * diffusion_scale.
+    # A realistic ~1.2 %/yr vol means diffusion_scale ≈ 0.02. With the old
+    # implicit scale (~0.69 from the softplus floor) the implied rate vol
+    # was ~40 %/yr, whose convexity term (Var(∫r)/2T ~ hundreds of %)
+    # swamped every yield and forced the model into the degenerate
+    # near-flat corner — see model_diagnosis_report.md.
+    base_nsde.diffusion_scale = 0.02
+    base_nsde.drift_scale = 0.5
+    # OU-only: cap the mean-reversion rate so the encoder's z0 isn't erased
+    # over the 1-10y curve (uncapped kappa -> instant convergence to the
+    # long-term mean -> flat, day-independent yields; the "OU gives constant
+    # yields" failure). Effective rate = drift_scale * min(kappa, this) <=
+    # 0.25, i.e. a mean-reversion timescale >= ~4y. Ignored by the simple
+    # trials. See model_diagnosis_report.md.
+    base_nsde.mean_reversion_max = 0.5
+    # Hard bounds left OFF (None): with a tiny diffusion, near-identity
+    # init, grad clipping and the NaN-guard, the SDE is already calm — we
+    # don't need a saturating clamp fighting the drift it needs to learn.
+    base_nsde.drift_bound = None
+    base_nsde.diffusion_bound = None
 
     # NEAR-IDENTITY INIT — shrink the output layer of every drift/diffusion
     # network by 0.1 (and zero its bias) so the SDE starts almost
@@ -227,7 +249,7 @@ def main() -> None:
     # MC + window sizing — GPU memory budget
     base_tr.n_paths = 512
     base_tr.batch_window = 16
-    base_tr.window_step = 4
+    base_tr.window_step = 2          # every 2nd day (was 4): 2x data + updates/epoch
     base_tr.accumulate_windows = 2
     # Simulation grid spacing. 1/32 -> 10yr * 32 = 320 Euler steps (was
     # 1/128 -> 1280). The backprop chain is the #1 driver of exploding
@@ -244,9 +266,14 @@ def main() -> None:
     # scale than yields/short-rate, so we down-weight it to keep all
     # three components contributing to the gradient. Raw components are
     # still logged unweighted under `loss_components` for monitoring.
+    # Relative futures loss makes λ_f interpretable and comparable to λ_y
+    # (absolute MSE on $120 prices vs decimal² yields was a 10³-10⁵×
+    # mismatch that no small λ_f could fix). With it on, λ_y = λ_f = 1
+    # genuinely balances the curve against the futures.
+    base_tr.futures_relative_loss = True
     base_tr.loss_weights.yield_curve = 1.0
     base_tr.loss_weights.short_rate  = 1.0
-    base_tr.loss_weights.futures     = 1e-4
+    base_tr.loss_weights.futures     = 1.0
 
     # Optimiser — adamw with a single learning rate (no grid axis).
     # Peak LR = 2e-4. In the previous run the instability kicked in

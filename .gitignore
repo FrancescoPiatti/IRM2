@@ -10,3 +10,15 @@
 
 
 markdowns/
+results/
+GridSearch_YCFut_tier1_2/
+
+src/__pycache__/
+src/dataloader/__pycache__/
+src/configs/__pycache__/*
+src/models/__pycache__/
+src/nn/__pycache__/
+src/training/__pycache__/
+src/types/__pycache__/
+src/utils/__pycache__/
+src/finance/__pycache__/

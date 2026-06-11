@@ -27,10 +27,15 @@ from ..utils.checks import _check_positive_value
 # Date / year-fraction helper
 # ---------------------------------------------------------------------
 
-# Single year-fraction convention used across the whole stack
-# (loader / pricer / trainer.dt = 1/252). User spec: 252 days/year is the
-# divisor everywhere; we count calendar days between dates and divide by
-# 252, so 252 acts purely as the normaliser, not as a working-day filter.
+# Single year-fraction convention used across the whole stack: a "year"
+# is 252 BUSINESS days. Date deltas are counted in business days
+# (``np.busday_count``, Mon-Fri) and divided by 252, so e.g. 91 calendar
+# days -> ~63 business days -> ~0.25y (3 months), matching the intuition
+# that the SVENY maturity grid [1..10] is "years of 252 trading days".
+# Caveat: a calendar year holds ~261 weekdays (no holiday calendar), so
+# long horizons stretch by ~3.6% (10 calendar years -> ~10.36). This is
+# the accepted slack of the convention — short-horizon quantities
+# (futures deliveries, coupon gaps) are the ones that must be accurate.
 DAYS_PER_YEAR = 252.0
 
 
@@ -43,13 +48,11 @@ def to_year_fraction(
     """
     Convert dates to a 1D tensor of year-fractions relative to `asof_date`.
 
-    Year-fractions use the **single 252 days/year convention** shared by
-    the loader, pricer, and trainer (``trainer.dt = 1/252``). The
-    ``business_days_per_year`` argument is accepted for back-compat but
-    is **not used** — the divisor is hard-wired to ``DAYS_PER_YEAR =
-    252`` so the convention is identical everywhere.
-
-    Vectorised via numpy ``datetime64`` arithmetic.
+    Year-fractions use the **business-day / 252 convention**: the number
+    of weekdays between the two dates (``np.busday_count``) divided by
+    252. The ``business_days_per_year`` argument is accepted for
+    back-compat but is **not used** — the divisor is hard-wired to
+    ``DAYS_PER_YEAR = 252`` so the convention is identical everywhere.
 
     Parameters
     ----------
@@ -63,16 +66,17 @@ def to_year_fraction(
     Returns
     -------
     Tensor
-        1D float32 tensor of year-fractions (252-day basis) with the same
-        length as `target_dates`.
+        1D float32 tensor of year-fractions (business-day basis) with the
+        same length as `target_dates`. Negative if a target precedes
+        `asof_date`; exactly 0.0 for the same date.
     """
     if not isinstance(target_dates, (list, tuple)):
         target_dates = [target_dates]
 
     asof = np.datetime64(pd.Timestamp(asof_date).normalize(), "D")
     targets = pd.to_datetime(list(target_dates)).normalize().values.astype("datetime64[D]")
-    day_deltas = (targets - asof).astype("int64").astype(np.float32)
-    return torch.from_numpy(day_deltas / float(DAYS_PER_YEAR))
+    busdays = np.busday_count(asof, targets).astype(np.float32)
+    return torch.from_numpy(busdays / float(DAYS_PER_YEAR))
 
 
 # ---------------------------------------------------------------------
@@ -123,6 +127,17 @@ class Pricer:
         # consumers can detect "no futures priced yet" (optimisation_plan §8).
         self.last_bond_stats: Optional[Dict[str, float]] = None
         self.last_ctd_freq: Optional[Tensor] = None
+
+        # BondNet <-> SDE consistency (LSMC). When ``consistency_enabled``
+        # is True and ``price_futures`` receives the short-rate
+        # ``realisations``, it also computes a Longstaff-Schwartz-style
+        # regression loss tying BondNet's bond prices to the *model's own*
+        # pathwise-discounted cashflows. Stored here (WITH grad) so the
+        # Trainer can add it to the objective. This is what couples the
+        # futures channel to the yield-curve dynamics — without it BondNet
+        # is a free head and the joint calibration is two unrelated tasks.
+        self.consistency_enabled: bool = False
+        self.last_consistency_loss: Optional[Tensor] = None
 
     # ------------------------------------------------------------------
     # Yield-curve pricing
@@ -250,6 +265,7 @@ class Pricer:
         latent_paths: Tensor,
         simulated_times: Tensor,
         target: Union[SingleFutureTarget, BatchedFuturesTarget],
+        realisations: Optional[Tensor] = None,
     ) -> Tensor:
         """
         Compute model-implied futures prices via cheapest-to-deliver Monte Carlo.
@@ -340,6 +356,17 @@ class Pricer:
 
         # Segmented min over basket: (n_paths, n_futures)
         ctd = self._segmented_min(cf_adj, basket_lengths)
+
+        # BondNet <-> SDE consistency (LSMC regression). See __init__ note.
+        self.last_consistency_loss = None
+        if self.consistency_enabled and realisations is not None:
+            self.last_consistency_loss = self._lsmc_consistency_loss(
+                bond_values=bond_values,
+                bond_features=bf,
+                per_slot_delivery_idx=per_slot_idx,
+                realisations=realisations,
+                simulated_times=simulated_times,
+            )
 
         # Per-snapshot diagnostics — cheap and detached so they don't perturb
         # autograd (optimisation_plan §8.1 + §8.2). Recording these lets the
@@ -438,6 +465,7 @@ class Pricer:
                 latent_paths=latent_paths,
                 simulated_times=simulated_times,
                 target=snapshot.futures,
+                realisations=realisations,
             )
             # Preserve any per-instrument metadata the user attached upstream
             # (math_review.md §13). The "source" tag wins on conflict so
@@ -468,6 +496,98 @@ class Pricer:
     # ------------------------------------------------------------------
     # Helpers for futures pricing
     # ------------------------------------------------------------------
+
+    def _lsmc_consistency_loss(
+        self,
+        *,
+        bond_values: Tensor,            # (n_paths, N_slots) — BondNet output (per 100 face)
+        bond_features: Tensor,          # (N_slots, 8) — BondMetadataStore feature order
+        per_slot_delivery_idx: Tensor,  # (N_slots,) long — grid index at delivery
+        realisations: Tensor,           # (n_paths, steps[, 1]) — short-rate paths
+        simulated_times: Tensor,        # (steps,) — year-fraction grid
+    ) -> Optional[Tensor]:
+        """
+        Longstaff-Schwartz consistency loss between BondNet and the SDE.
+
+        For each deliverable slot, reconstruct an approximate cashflow
+        schedule from the bond features (coupon every ``1/freq`` years
+        starting at ``years_to_next_coupon``, principal at
+        ``years_to_maturity``) and compute the **pathwise** present value at
+        delivery using the model's own simulated short rate:
+
+            PV_p = sum_j c_j * exp(-(I_p(t_j) - I_p(T_dlv))),   I = cumsum(r)*dt
+
+        ``E[PV | z_T]`` is the model-consistent bond price, so regressing
+        BondNet(z_T, b) onto PV (MSE over paths and slots) drives BondNet
+        toward the conditional expectation of the model's own discounting —
+        the classical LSMC trick, with NO nested simulation. Prices are
+        normalised by 100 so the loss is on the same dimensionless O(1e-4)
+        scale as the relative futures loss and the yield MSE.
+
+        Slots whose maturity falls beyond the simulation horizon are
+        excluded (their cashflows cannot be discounted on this grid).
+        Returns ``None`` when no slot is usable.
+        """
+        realisations = self._to_2d_paths(realisations)
+        n_steps = realisations.size(1)
+        dt = 1.0 / float(self.steps_per_year)
+
+        # Cumulative integral of r on the same left-Riemann convention as
+        # price_zcb: I[:, k] = sum_{s<=k} r_s * dt, value *at* grid idx k+1.
+        cum_int = torch.cumsum(realisations, dim=1) * dt          # (P, S)
+
+        # Feature columns (BondMetadataStore order).
+        ytm  = bond_features[:, 0]          # years to maturity
+        ytnc = bond_features[:, 1]          # years to next coupon
+        cpn  = bond_features[:, 3]          # coupon rate (decimal)
+        freq = bond_features[:, 4].clamp_min(1.0)
+        ncp  = bond_features[:, 5]          # remaining coupon count
+
+        horizon = float(simulated_times[-1].item())
+        slot_ok = ytm <= horizon + 1e-9                            # (N,)
+        if not bool(slot_ok.any()):
+            return None
+
+        # Coupon time grid per slot: t_k = ytnc + k/freq, k = 0..K-1.
+        K = int(min(max(float(ncp.max().item()), 1.0), 80.0))
+        ks = torch.arange(K, device=bond_features.device, dtype=bond_features.dtype)
+        t_cpn = ytnc.unsqueeze(1) + ks.unsqueeze(0) / freq.unsqueeze(1)   # (N, K)
+
+        # Delivery time per slot (from the grid, so it matches the latent
+        # state BondNet was evaluated at).
+        t_dlv = simulated_times.index_select(0, per_slot_delivery_idx)    # (N,)
+
+        valid = (ks.unsqueeze(0) < ncp.unsqueeze(1))                       # within coupon count
+        valid &= t_cpn > t_dlv.unsqueeze(1) + 1e-9                         # strictly after delivery
+        valid &= t_cpn <= horizon + 1e-9                                   # on the grid
+        valid &= slot_ok.unsqueeze(1)
+
+        # Map times -> grid indices (same round-and-clamp as price_zcb).
+        def _idx(t: Tensor) -> Tensor:
+            return torch.round(t * float(self.steps_per_year)).long().clamp(1, n_steps)
+
+        idx_cpn = _idx(t_cpn)                                              # (N, K)
+        idx_mat = _idx(ytm)                                                # (N,)
+        idx_dlv = per_slot_delivery_idx.clamp(min=1)                       # (N,)
+
+        # Pathwise integrals at the relevant indices: I(t) = cum_int[:, idx-1].
+        N, Kk = idx_cpn.shape
+        I_cpn = cum_int.index_select(1, (idx_cpn - 1).reshape(-1)).reshape(-1, N, Kk)  # (P, N, K)
+        I_mat = cum_int.index_select(1, idx_mat - 1)                       # (P, N)
+        I_dlv = cum_int.index_select(1, idx_dlv - 1)                       # (P, N)
+
+        # Pathwise discount factors from delivery to each cashflow.
+        D_cpn = torch.exp(-(I_cpn - I_dlv.unsqueeze(-1)))                  # (P, N, K)
+        D_mat = torch.exp(-(I_mat - I_dlv))                                # (P, N)
+
+        cpn_amt = (100.0 * cpn / freq).unsqueeze(0).unsqueeze(-1)          # (1, N, 1)
+        pv = (valid.unsqueeze(0) * cpn_amt * D_cpn).sum(dim=-1)            # (P, N)
+        pv = pv + 100.0 * D_mat * slot_ok.unsqueeze(0)                     # principal
+
+        diff = (bond_values - pv) / 100.0                                  # dimensionless
+        mask = slot_ok.unsqueeze(0).expand_as(diff)
+        return diff.pow(2)[mask].mean()
+
 
     @staticmethod
     def _extract_latent_idx_at_delivery(

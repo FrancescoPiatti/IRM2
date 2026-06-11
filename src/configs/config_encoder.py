@@ -12,7 +12,17 @@ from ..utils.misc import freeze_dict
 
 
 EncoderMode = Literal["simple", "hierarchical"]
-PreprocessMode = Literal['none', 'norm_z', 'norm_max']
+# Input preprocessing applied by ShortRateModel before the encoder:
+# - 'none'     : raw decimal rates (~0.00-0.06) — day-to-day differences are
+#                ~5e-4, a very weak signal for the encoder.
+# - 'scale100' : multiply by 100 (back to percent units). Preserves level,
+#                slope and curvature exactly; just rescales so the encoder
+#                sees O(1) inputs with O(0.05) daily moves. RECOMMENDED.
+# - 'norm_z'   : per-feature z-score over the lookback window. NOTE: this
+#                removes each pillar's window mean, destroying level
+#                information — only use if you want shape-only encoding.
+# - 'norm_max' : divide by the max |value| over the window.
+PreprocessMode = Literal['none', 'scale100', 'norm_z', 'norm_max']
 CombineMethod = Literal['concat', 'project', 'add']
 OutNorm = Literal['layernorm', 'rmsnorm', 'none', 'None']
 
@@ -82,7 +92,7 @@ class EncoderCfg:
         if self.out_norm not in (None, "none", "None", "layernorm", "rmsnorm"):
             raise ValueError(f"Invalid EncoderCfg.out_norm='{self.out_norm}'.")
 
-        if self.preprocess_mode not in (None, 'none', 'norm_z', 'norm_max'):
+        if self.preprocess_mode not in (None, 'none', 'scale100', 'norm_z', 'norm_max'):
             raise ValueError(f"Invalid EncoderCfg.preprocess_mode='{self.preprocess_mode}'.")
 
         if self.mode == "simple":

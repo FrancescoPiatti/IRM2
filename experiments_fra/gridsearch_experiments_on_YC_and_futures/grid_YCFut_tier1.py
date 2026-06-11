@@ -170,11 +170,20 @@ def main() -> None:
     # -------------------------------------------------------------------
     base_enc = EncoderCfg(mode="simple")
     base_enc.out_norm = "rmsnorm"
+    # INPUT PREPROCESSING — feed the encoder PERCENT units (x100). Raw
+    # decimal yields differ day-to-day by only ~5e-4, far too weak a signal
+    # for the LSTM to distinguish curves; this was crippling z0, the only
+    # day-specific quantity in the whole model (codebase_review B4).
+    base_enc.preprocess_mode = "scale100"
     base_enc.net = {
         "type": "lstm",
         "n_layers": 2,
         "n_units": 128,
-        "dropout": 0.1,
+        # Dropout OFF: dropout in the encoder (and especially inside SDE
+        # coefficient nets, below) makes the train-time dynamics stochastic
+        # and different from eval-time dynamics — a measure mismatch a
+        # calibration model should not have.
+        "dropout": 0.0,
         "bidirectional": True,
         "out_activation": "identity",
     }
@@ -226,10 +235,15 @@ def main() -> None:
     # large random coefficients that spike the gradient through the unroll.
     base_nsde.init_output_scale = 0.1
 
+    # NO dropout inside SDE coefficient nets: a fresh dropout mask at every
+    # Euler step makes the drift/diffusion stochastic during training but
+    # deterministic at eval — the trained dynamics and the evaluated
+    # dynamics are then *different processes* (and the masks act as extra
+    # unmodelled noise on top of the Brownian term).
     common_drift_net = {
         "type": "mlp",
         "n_layers": 3, "n_units": [128, 128, 64],
-        "dropout": 0.1, "activation": "gelu", "out_activation": "identity",
+        "dropout": None, "activation": "gelu", "out_activation": "identity",
     }
     base_nsde.drift = common_drift_net           # used by type="simple"
     base_nsde.long_term_mean = common_drift_net  # used by type="ou"
@@ -272,8 +286,20 @@ def main() -> None:
     # genuinely balances the curve against the futures.
     base_tr.futures_relative_loss = True
     base_tr.loss_weights.yield_curve = 1.0
-    base_tr.loss_weights.short_rate  = 1.0
+    # Short-rate target weight = 0: r0 is ANCHORED to the observed short
+    # rate in decode(), so MSE_sr ≈ 1e-19 by construction — a dead term
+    # that contributes no gradient. NOTE: enable_short_rate stays True in
+    # the dataloader (the short-rate history feeds the encoder and the r0
+    # anchor); only the loss weight is zeroed.
+    base_tr.loss_weights.short_rate  = 0.0
     base_tr.loss_weights.futures     = 1.0
+
+    # BondNet <-> SDE consistency (LSMC): regress BondNet's deliverable-bond
+    # prices onto the model's OWN pathwise-discounted cashflows (same
+    # simulated paths — no nested simulation). This is what makes the
+    # futures channel and the yield curve share one term structure instead
+    # of being two unrelated heads on a shared encoder (codebase_review B2).
+    base_tr.bondnet_consistency_weight = 1.0
 
     # Optimiser — adamw with a single learning rate (no grid axis).
     # Peak LR = 2e-4. In the previous run the instability kicked in
@@ -341,22 +367,32 @@ def main() -> None:
     )
 
     # -------------------------------------------------------------------
-    # Grid — 2 × 2 = 4 trials (kept small per project guidance)
+    # Grid — 2 × 2 × 2 = 8 trials. The decoder axis tests the linear
+    # decoder (the default; effectively a ONE-factor short rate, since
+    # r = w·z + b is a scalar projection regardless of latent_dim) against
+    # a 2-layer MLP decoder that can express multi-factor curve shapes.
     # -------------------------------------------------------------------
     diffusion_small = {
         "type": "mlp",
         "n_layers": 2, "n_units": [64, 64],
-        "dropout": 0.1, "activation": "gelu", "out_activation": "softplus",
+        "dropout": None, "activation": "gelu", "out_activation": "softplus",
     }
     diffusion_big = {
         "type": "mlp",
         "n_layers": 3, "n_units": [128, 128, 64],
-        "dropout": 0.1, "activation": "gelu", "out_activation": "softplus",
+        "dropout": None, "activation": "gelu", "out_activation": "softplus",
+    }
+
+    decoder_mlp = {
+        "type": "mlp",
+        "n_layers": 2, "n_units": [64, 32],
+        "dropout": None, "activation": "gelu", "out_activation": "identity",
     }
 
     param_grid = {
         "nsde.type":      ["simple", "ou"],
         "nsde.diffusion": [diffusion_small, diffusion_big],
+        "model.decoder":  [None, decoder_mlp],   # None = default nn.Linear
     }
 
     search = OptunaGridSearch(

@@ -103,11 +103,14 @@ def main() -> None:
     # -------------------------------------------------------------------
     base_enc = EncoderCfg(mode="simple")
     base_enc.out_norm = "rmsnorm"
+    # Percent-unit inputs (x100): raw decimal yields differ day-to-day by
+    # ~5e-4, too weak for the encoder to separate days (codebase_review B4).
+    base_enc.preprocess_mode = "scale100"
     base_enc.net = {
         "type": "lstm",
         "n_layers": 2,
         "n_units": 96,
-        "dropout": 0.1,
+        "dropout": 0.0,        # deterministic encoder for calibration
         "bidirectional": True,
     }
 
@@ -115,6 +118,12 @@ def main() -> None:
     base_nsde.solver = "custom_euler"
     base_nsde.dt = 1 / 252                      # solver step on the 252-day year
     base_nsde.checkpoint_chunk_size = 8         # SDE gradient checkpointing
+    # Calibrated coefficient scales + OU mean-reversion cap (see the
+    # YCFut grid + model_diagnosis_report.md for the derivations).
+    base_nsde.diffusion_scale = 0.02
+    base_nsde.drift_scale = 0.5
+    base_nsde.mean_reversion_max = 0.5
+    base_nsde.init_output_scale = 0.1
 
     base_tr = TrainerCfg()
     base_tr.results_root = "results"
@@ -157,20 +166,27 @@ def main() -> None:
     base_tr.checkpoint.max_to_keep = 3
 
     # -------------------------------------------------------------------
-    # Tier-1 grid — 2 × 2 = 4 trials
+    # Tier-1 grid — 2 × 2 × 2 = 8 trials (decoder axis added: linear vs
+    # 2-layer MLP; the linear decoder is effectively a one-factor model).
+    # No dropout inside SDE nets (stochastic-coefficient mismatch).
     # -------------------------------------------------------------------
     diff_small = {
         "type": "mlp", "n_layers": 2, "n_units": [32, 32],
-        "dropout": 0.1, "activation": "gelu", "out_activation": "softplus",
+        "dropout": None, "activation": "gelu", "out_activation": "softplus",
     }
     diff_big = {
         "type": "mlp", "n_layers": 2, "n_units": [64, 64],
-        "dropout": 0.1, "activation": "gelu", "out_activation": "softplus",
+        "dropout": None, "activation": "gelu", "out_activation": "softplus",
+    }
+    decoder_mlp = {
+        "type": "mlp", "n_layers": 2, "n_units": [64, 32],
+        "dropout": None, "activation": "gelu", "out_activation": "identity",
     }
 
     param_grid = {
         "nsde.type":      ["simple", "ou"],
         "nsde.diffusion": [diff_small, diff_big],
+        "model.decoder":  [None, decoder_mlp],
     }
 
     search = OptunaGridSearch(

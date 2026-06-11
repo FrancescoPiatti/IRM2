@@ -235,6 +235,18 @@ class TrainerCfg:
     # decimal scale, and market yields can be ~0 → relative would blow up).
     futures_relative_loss: bool = False
 
+    # Weight of the BondNet <-> SDE consistency loss (LSMC). When > 0, the
+    # pricer regresses BondNet's deliverable-bond prices onto the model's
+    # OWN pathwise-discounted cashflows (computed on the same simulated
+    # short-rate paths — no nested simulation). This is what ties the
+    # futures channel to the yield-curve dynamics: without it, BondNet is a
+    # free head and "joint calibration" degenerates into two unrelated
+    # tasks sharing an encoder. The loss is normalised by 100² so it lives
+    # on the same dimensionless scale as the relative futures loss; 1.0 is
+    # a sensible starting weight. Gradients flow into BOTH BondNet and the
+    # SDE (bidirectional coupling) by design.
+    bondnet_consistency_weight: float = 0.0
+
     # Safety options
     skip_nan_loss: bool = True
     log_every_n_windows: int = 1
@@ -277,6 +289,11 @@ class TrainerCfg:
             w = float(getattr(self.loss_weights, name))
             if w < 0.0:
                 raise ValueError(f"loss_weights.{name} must be >= 0; got {w}.")
+
+        if float(self.bondnet_consistency_weight) < 0.0:
+            raise ValueError(
+                f"bondnet_consistency_weight must be >= 0; got {self.bondnet_consistency_weight}."
+            )
 
         # Early stopping sub-config
         if self.early_stopping.enabled:

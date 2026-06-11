@@ -309,11 +309,14 @@ class FuturesStore:
             if dlv <= ts:
                 continue
             if max_delivery_years is not None:
-                # Day delta -> year fraction using 252 days/year (the single
-                # convention used by the rest of the stack — pricer,
-                # bond_metadata_store, trainer.dt).
-                days = (dlv - ts).days
-                years = days / 252.0
+                # Business-day delta / 252 — the single convention used by
+                # the rest of the stack (pricer.to_year_fraction,
+                # bond_metadata_store). 91 calendar days -> ~63 weekdays
+                # -> ~0.25y.
+                busdays = int(np.busday_count(
+                    np.datetime64(ts, "D"), np.datetime64(dlv, "D")
+                ))
+                years = busdays / 252.0
                 if years > float(max_delivery_years):
                     continue
             active.append(t)

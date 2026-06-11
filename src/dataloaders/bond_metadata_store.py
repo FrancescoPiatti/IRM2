@@ -187,13 +187,16 @@ class BondMetadataStore:
         coupon = df["coupon_rate"].to_numpy(dtype=np.float32)
         freq = df["coupon_frequency"].to_numpy(dtype=np.int64).astype(np.float32)
 
-        # Compute years_to_maturity using the single 252-day year convention
-        # shared by the loader, pricer, and trainer (user spec). A 1-year
-        # bond yields a feature value of 1.0. `business_days_per_year` is
-        # preserved on the store for naming / future use, but the actual
-        # year-fraction divisor is always `_DAYS_PER_YEAR = 252` so the
-        # whole stack agrees.
-        years_to_maturity = np.maximum(maturity_ord - asof_ord, 0) / _DAYS_PER_YEAR
+        # Compute years_to_maturity on the BUSINESS-day / 252 convention
+        # shared by the whole stack (pricer.to_year_fraction does the
+        # same): count weekdays between asof and maturity, divide by 252.
+        # A ~1-calendar-year bond gives ~1.04 (261 weekdays / 252); a
+        # 3-month gap gives ~0.25 — short horizons are exact, long ones
+        # stretch ~3.6% (accepted slack of the convention).
+        asof_d64 = np.datetime64(ts, "D")
+        mat_d64 = df["maturity_date"].to_numpy().astype("datetime64[D]")
+        busdays = np.busday_count(asof_d64, mat_d64)
+        years_to_maturity = np.maximum(busdays, 0).astype(np.float32) / _DAYS_PER_YEAR
 
         # Approximate coupon-cycle features from ytm and frequency only
         u = years_to_maturity * freq                           # ~ remaining coupon periods

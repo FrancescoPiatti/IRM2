@@ -475,31 +475,64 @@ class ShortRateModel(nn.Module):
         return torch.cat([curve_history, sr], dim=-1)
 
 
+    def _apply_preprocess(self, x: Tensor) -> Tensor:
+        """
+        Apply the configured input preprocessing to an encoder input tensor.
+
+        ``x`` is ``(T, M)`` or ``(B, T, M)`` — time is always ``dim=-2``.
+
+        Modes
+        -----
+        - ``none``     : passthrough (raw decimal rates).
+        - ``scale100`` : multiply by 100 (percent units). Preserves level /
+          slope / curvature exactly while giving the encoder O(1) inputs
+          instead of O(0.01) — raw decimal yields differ day-to-day by only
+          ~5e-4, which is too weak a signal for the encoder to separate
+          days. Recommended default.
+        - ``norm_z``   : per-feature z-score over the lookback window.
+          WARNING: removes each pillar's window mean — level information is
+          destroyed. Shape-only encoding.
+        - ``norm_max`` : divide by max |value| over the window (keeps
+          relative level but rescales per window).
+        """
+        mode = 'none' if self.preprocess_mode is None else str(self.preprocess_mode).lower()
+        if mode == 'none':
+            return x
+        if mode == 'scale100':
+            return x * 100.0
+        if mode == 'norm_z':
+            mu = x.mean(dim=-2, keepdim=True)
+            sd = x.std(dim=-2, keepdim=True).clamp_min(1e-8)
+            return (x - mu) / sd
+        if mode == 'norm_max':
+            m = x.abs().amax(dim=(-2, -1), keepdim=True).clamp_min(1e-8)
+            return x / m
+        raise ValueError(f"Unknown preprocess_mode={self.preprocess_mode}")
+
+
     def _preprocess_encoder_input(
         self,
         past_data: Union[EncoderInputs, Tuple[EncoderInputs, EncoderInputs]],
     ) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """
         Convert one or a pair of `EncoderInputs` into the tensor(s) the
-        encoder consumes.
+        encoder consumes, applying `cfg.preprocess_mode`.
 
         When `past_data.short_rate` is None, only the curve history is fed to
         the encoder (no concatenation is attempted).
         """
-        if self.preprocess_mode is not None and str(self.preprocess_mode).lower() != 'none':
-            raise NotImplementedError(f"preprocess_mode={self.preprocess_mode} not supported yet.")
-
         if self.encoder_type == 'simple':
             # If a dataloader already pre-stacked curve+short_rate into one
             # tensor and exposed it as `curve_history` with short_rate=None,
             # we just forward it.
-            return self._maybe_concat_short_rate(past_data.curve_history, past_data.short_rate)
+            out = self._maybe_concat_short_rate(past_data.curve_history, past_data.short_rate)
+            return self._apply_preprocess(out)
 
         if self.encoder_type == 'hierarchical':
             fast_data, slow_data = past_data
             out_fast = self._maybe_concat_short_rate(fast_data.curve_history, fast_data.short_rate)
             out_slow = self._maybe_concat_short_rate(slow_data.curve_history, slow_data.short_rate)
-            return out_fast, out_slow
+            return self._apply_preprocess(out_fast), self._apply_preprocess(out_slow)
 
         raise ValueError(f"Unknown encoder_type={self.encoder_type}")
 

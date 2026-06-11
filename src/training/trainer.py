@@ -171,6 +171,11 @@ class Trainer:
             business_days_per_year=float(getattr(self.dataloader, "business_days_per_year", 252.0)),
             use_amp=self.use_amp,
         )
+        # BondNet <-> SDE consistency (LSMC) — computed inside the pricer
+        # during price_futures when enabled, added to the loss in _get_loss.
+        self.pricer.consistency_enabled = (
+            float(getattr(self.cfg, "bondnet_consistency_weight", 0.0)) > 0.0
+        )
 
 
         # ------------------------------------------
@@ -656,6 +661,16 @@ class Trainer:
                 fut_loss_raw = self.loss_fn(model_futures, observed_futures)
             loss_components["futures"] = float(fut_loss_raw.detach().cpu().item())
             day_loss = day_loss + lw_f * fut_loss_raw
+
+            # BondNet <-> SDE consistency (LSMC), computed by the pricer
+            # alongside price_futures. Ties BondNet's bond prices to the
+            # model's own pathwise discounting so the futures channel and
+            # the yield curve share one term structure.
+            cons_w = float(getattr(self.cfg, "bondnet_consistency_weight", 0.0))
+            cons_loss = self.pricer.last_consistency_loss
+            if cons_w > 0.0 and cons_loss is not None:
+                loss_components["bond_consistency"] = float(cons_loss.detach().cpu().item())
+                day_loss = day_loss + cons_w * cons_loss
 
         # -------------------------------------------------------
         # Bonds / Options (later)
@@ -1516,6 +1531,14 @@ class Trainer:
             "n_paths": self.n_paths,
             "batch_window": self.batch_window,
             "window_step": self.window_step,
+            "dt": self.dt,
+            "loss_weights": {
+                "yield_curve": float(self.cfg.loss_weights.yield_curve),
+                "short_rate": float(self.cfg.loss_weights.short_rate),
+                "futures": float(self.cfg.loss_weights.futures),
+            },
+            "futures_relative_loss": bool(getattr(self.cfg, "futures_relative_loss", False)),
+            "bondnet_consistency_weight": float(getattr(self.cfg, "bondnet_consistency_weight", 0.0)),
             "use_amp": self.use_amp,
             "grad_clip_norm": self.grad_clip_norm,
             "accumulate_windows": self.accumulate_windows,

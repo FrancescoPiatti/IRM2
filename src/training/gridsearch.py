@@ -277,6 +277,11 @@ class OptunaGridSearch:
                     bondnet_cfg.latent_dim = int(latent_dim)
                 model_extra["bondnet"] = bondnet_cfg
 
+            # Decoder axis (model.decoder): None -> default linear decoder,
+            # dict -> create_network_from_config inside ShortRateModel.
+            if "decoder" in model_kwargs and model_kwargs["decoder"] is not None:
+                model_extra["decoder"] = model_kwargs["decoder"]
+
             model = self.model_cls(
                 name=str(getattr(tr_cfg, "run_name", grid_run_name)),
                 encoder=enc_cfg,
@@ -678,10 +683,15 @@ class OptunaGridSearch:
 
         if root == "model":
             if len(rest) != 1:
-                raise ValueError(f"Invalid model path '{path}'. Use model.latent_dim / model.noise_dim only.")
+                raise ValueError(
+                    f"Invalid model path '{path}'. Use model.latent_dim / model.noise_dim / model.decoder."
+                )
             key = rest[0]
-            if key not in ("latent_dim", "noise_dim"):
+            if key not in ("latent_dim", "noise_dim", "decoder"):
                 raise ValueError(f"Unsupported model hyperparameter '{path}'.")
+            # ``model.decoder`` takes either None (default linear decoder)
+            # or a network-config dict (e.g. {"type": "mlp", ...}) routed
+            # straight into ShortRateModel(decoder=...).
             model_kwargs[key] = value
             return
 

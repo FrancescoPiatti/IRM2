@@ -6,6 +6,7 @@ are deterministic and do not depend on a trained model.
 """
 import math
 
+import numpy as np
 import pandas as pd
 import pytest
 import torch
@@ -29,12 +30,18 @@ from src.types.data_types import (
 
 
 def test_to_year_fraction_scalar():
-    # Single 252-day year convention used everywhere in the stack
-    # (user spec) — 366 calendar days between 2020-01-01 (leap year)
-    # and 2021-01-01 -> 366/252 ≈ 1.452.
+    # Business-day / 252 convention: weekdays between the two dates / 252.
     out = to_year_fraction(pd.Timestamp("2021-01-01"), pd.Timestamp("2020-01-01"))
+    expected = np.busday_count(np.datetime64("2020-01-01"), np.datetime64("2021-01-01")) / 252.0
     assert out.shape == (1,)
-    assert out.item() == pytest.approx(366 / 252.0, rel=1e-5)
+    assert out.item() == pytest.approx(float(expected), rel=1e-6)
+
+
+def test_to_year_fraction_three_months_is_quarter():
+    # The convention's calibration point: ~91 calendar days ≈ 63 weekdays
+    # ≈ 0.25y — a 3-month futures delivery must land near a quarter.
+    out = to_year_fraction(pd.Timestamp("2020-04-01"), pd.Timestamp("2020-01-01"))
+    assert out.item() == pytest.approx(0.25, abs=0.02)
 
 
 def test_to_year_fraction_list():

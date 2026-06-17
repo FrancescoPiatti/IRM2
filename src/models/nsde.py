@@ -100,6 +100,14 @@ class BaseNSDE(nn.Module):
         mrm = getattr(config, "mean_reversion_max", None)
         self.mean_reversion_max = float(mrm) if mrm else None
 
+        # Market price of risk lambda (one per Brownian factor). The drift
+        # learned by f() is the RISK-NEUTRAL drift mu_Q used for pricing.
+        # The physical-measure drift is mu_P = mu_Q + g . lambda (Girsanov:
+        # dW_Q = dW_P + lambda dt). lambda is trained only when the P/Q
+        # consistency loss is active (TrainerCfg.pq_consistency_weight > 0);
+        # initialised to 0 so the model starts at P = Q (zero term premium).
+        self.market_price_of_risk = nn.Parameter(torch.zeros(self.noise_dim))
+
         # Optional smooth coefficient bounds (None => unbounded).
         db = getattr(config, "drift_bound", None)
         gb = getattr(config, "diffusion_bound", None)
@@ -212,6 +220,25 @@ class BaseNSDE(nn.Module):
         if self.diffusion_bound is not None:
             x = self._soft_bound(x, self.diffusion_bound)
         return x
+
+
+    def f_P(self, t, z) -> Tensor:
+        """
+        Physical-measure (P) drift ``mu_P = mu_Q + g . lambda``.
+
+        ``f`` returns the risk-neutral drift ``mu_Q`` used for pricing; this
+        adds back the market-price-of-risk premium so the result is the drift
+        of the SAME process under the physical measure (Girsanov). Only the
+        diagonal-noise case is supported (``g`` is then a per-factor vector,
+        and the correction is the elementwise product ``g * lambda``).
+        """
+        mu_q = self.f(t, z)                         # (n_paths, latent_dim)
+        g = self.g(t, z)
+        if self.noise_type != 'diagonal':
+            raise NotImplementedError(
+                "f_P (P/Q drift) is only implemented for noise_type='diagonal'."
+            )
+        return mu_q + g * self.market_price_of_risk   # broadcast (d,) over (n, d)
 
 
     @staticmethod

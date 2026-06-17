@@ -584,6 +584,20 @@ class Pricer:
         pv = (valid.unsqueeze(0) * cpn_amt * D_cpn).sum(dim=-1)            # (P, N)
         pv = pv + 100.0 * D_mat * slot_ok.unsqueeze(0)                     # principal
 
+        # DETACH the regression target. The gradient flows into BondNet
+        # ONLY — never back through the pathwise discounting into the SDE.
+        # Lesson from GridSearch_YCFut_tier1_3: with the gradient flowing
+        # both ways and BondNet anchored near par by the market-futures
+        # loss, this term (which dominated the objective ~20:1 over the
+        # yield MSE) *bent the curve to meet BondNet* — it dragged the
+        # model's long-horizon rates down toward deliverable coupon levels
+        # (~2-3%), producing a -250..-300 bp droop in the 5-10y yields
+        # across every trial. Detaching makes this pure LSMC regression:
+        # BondNet learns the model-consistent conditional bond price, and
+        # any genuine futures/curve basis shows up as a *reported*
+        # residual instead of a corrupted yield curve.
+        pv = pv.detach()
+
         diff = (bond_values - pv) / 100.0                                  # dimensionless
         mask = slot_ok.unsqueeze(0).expand_as(diff)
         return diff.pow(2)[mask].mean()

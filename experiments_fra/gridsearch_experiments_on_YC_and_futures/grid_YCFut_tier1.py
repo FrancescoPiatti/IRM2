@@ -117,7 +117,10 @@ BOND_FEAT_DIM = 8
 # Fixed structural hparams (not gridded). Defining them up here keeps the
 # search width explicit ("only 4 trials") and the magic numbers in one
 # place for the docstring above.
-LATENT_DIM = 64
+# latent_dim reduced 64 -> 32 (hparam audit): the short rate is a scalar
+# projection of the latent, so 64 dims dilute the signal without adding
+# identifiable structure; 32 keeps ample capacity for the curve factors.
+LATENT_DIM = 32
 
 
 def main() -> None:
@@ -294,12 +297,29 @@ def main() -> None:
     base_tr.loss_weights.short_rate  = 0.0
     base_tr.loss_weights.futures     = 1.0
 
-    # BondNet <-> SDE consistency (LSMC): regress BondNet's deliverable-bond
-    # prices onto the model's OWN pathwise-discounted cashflows (same
-    # simulated paths — no nested simulation). This is what makes the
-    # futures channel and the yield curve share one term structure instead
-    # of being two unrelated heads on a shared encoder (codebase_review B2).
-    base_tr.bondnet_consistency_weight = 1.0
+    # BondNet -> model-PV consistency (LSMC): regress BondNet's
+    # deliverable-bond prices onto the model's OWN pathwise-discounted
+    # cashflows (same simulated paths — no nested simulation; target
+    # DETACHED, gradient reaches BondNet only). Weight reduced from 1.0:
+    # in tier1_3 the term carried an irreducible pathwise-variance floor
+    # that made up ~91% of the total, hiding yield-scale progress from the
+    # EMA early-stopper and (in its non-detached form) bending the curve
+    # itself. At 0.25 the BondNet regression still gets plenty of signal
+    # while the training total stays legible.
+    base_tr.bondnet_consistency_weight = 0.25
+
+    # SHORT-RATE VOL ANCHOR — pins the one quantity the calibration data
+    # cannot identify. Yields are vol-insensitive up to bp-level convexity,
+    # so left free the diffusion drifts to degenerate values (tier1_3
+    # trained to sigma_r ~ 0.1-0.4 %/yr; the MC fan collapsed to a single
+    # line). By Girsanov the diffusion is identical under P and Q, so
+    # anchoring the model's 1y cross-path std to the historically measured
+    # short-rate vol (~1 %/yr for USD) is principled. Scale: at the
+    # anchored optimum the term ~ 0; a 0.9% mismatch contributes
+    # 10 * (0.009)^2 ~ 8e-4 — strong enough to dominate a stale yield
+    # plateau, gentle enough not to swamp live yield gradients.
+    base_tr.rate_vol_target = 0.01
+    base_tr.rate_vol_weight = 10.0
 
     # Optimiser — adamw with a single learning rate (no grid axis).
     # Peak LR = 2e-4. In the previous run the instability kicked in
@@ -366,21 +386,14 @@ def main() -> None:
         output_init_level=100.0,
     )
 
-    # -------------------------------------------------------------------
-    # Grid — 2 × 2 × 2 = 8 trials. The decoder axis tests the linear
-    # decoder (the default; effectively a ONE-factor short rate, since
-    # r = w·z + b is a scalar projection regardless of latent_dim) against
-    # a 2-layer MLP decoder that can express multi-factor curve shapes.
-    # -------------------------------------------------------------------
-    diffusion_small = {
-        "type": "mlp",
-        "n_layers": 2, "n_units": [64, 64],
-        "dropout": None, "activation": "gelu", "out_activation": "softplus",
-    }
-    diffusion_big = {
-        "type": "mlp",
-        "n_layers": 3, "n_units": [128, 128, 64],
-        "dropout": None, "activation": "gelu", "out_activation": "softplus",
+    # CONSTANT diffusion fixed (not gridded): a learnable per-dim constant
+    # (the Vasicek/Hull-White choice). With the rate-vol anchor pinning its
+    # magnitude, state-dependent vol is a second-order question; we spend
+    # the grid budget on the measure axis instead.
+    base_nsde.diffusion = {
+        "type": "constant",
+        "init": "zeros",                      # softplus(0)=0.693 * scale = sane start
+        "out_activation": "softplus",
     }
 
     decoder_mlp = {
@@ -389,10 +402,22 @@ def main() -> None:
         "dropout": None, "activation": "gelu", "out_activation": "identity",
     }
 
+    # -------------------------------------------------------------------
+    # Grid — 2 × 2 × 2 = 8 trials. The headline axis is the MEASURE:
+    # * nsde.type: simple vs OU drift family.
+    # * model.decoder: linear (one-factor short rate, since r = w·z + b is a
+    #   scalar projection) vs 2-layer MLP (multi-factor curve shapes).
+    # * trainer.pq_consistency_weight: 0.0 = pure risk-neutral (Q-only)
+    #   calibration; 0.5 = JOINT P/Q calibration — the physical-measure
+    #   forecast of the short rate is matched to realised data, training the
+    #   market price of risk lambda (term premium). This is the modelling
+    #   question of interest: does pinning the P-dynamics improve / stabilise
+    #   the Q curve, and what term premium does the data imply.
+    # -------------------------------------------------------------------
     param_grid = {
-        "nsde.type":      ["simple", "ou"],
-        "nsde.diffusion": [diffusion_small, diffusion_big],
-        "model.decoder":  [None, decoder_mlp],   # None = default nn.Linear
+        "nsde.type":                      ["simple", "ou"],
+        "model.decoder":                  [None, decoder_mlp],   # None = default nn.Linear
+        "trainer.pq_consistency_weight":  [0.0, 0.5],            # Q-only vs P/Q
     }
 
     search = OptunaGridSearch(

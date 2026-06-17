@@ -5,7 +5,6 @@ from typing import Union
 from typing import Optional
 
 from torch.nn import Module
-from torch.nn import Identity
 
 
 @dataclass
@@ -42,7 +41,9 @@ class BaseBondNetCfg:  # noqa: D101 — see subclasses
     bond_feat_dim: int
 
     activation: Union[str, Module] = "SiLU"
-    out_activation: Union[str, Module] = Identity
+    # Plain string (not the nn.Identity class) so it serialises cleanly into
+    # model_info.json and round-trips through reconstruction.
+    out_activation: Union[str, Module] = "identity"
     dropout: Optional[float] = 0.0
     output_positive: bool = False
     output_init_level: Optional[float] = None

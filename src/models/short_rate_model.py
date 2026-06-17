@@ -207,10 +207,16 @@ class ShortRateModel(nn.Module):
         # Resolve Decoder
         # ---------------------------------
 
+        # Remember the decoder spec (when built from a dict) so model_info
+        # can serialise it — an MLP/Sequential decoder has no ``.cfg`` and
+        # would otherwise be lost, breaking offline reconstruction.
+        self._decoder_spec: Optional[Dict[str, Any]] = None
+
         if decoder is None:
             self.decoder = nn.Linear(self.latent_dim, 1)
 
         elif isinstance(decoder, dict):
+            self._decoder_spec = dict(decoder)
             self.decoder = create_network_from_config(decoder, input_dim=self.latent_dim, output_dim=1)
 
         else:
@@ -452,6 +458,52 @@ class ShortRateModel(nn.Module):
         return self.decode(zs, r0=r0).squeeze(-1)      # decode
 
 
+    def forecast_short_rate_P(
+        self,
+        z0: Tensor,
+        r0: Union[float, Tensor],
+        horizon: float,
+    ) -> Tensor:
+        """
+        One-step physical-measure forecast of the short rate at ``horizon``.
+
+        Uses a single deterministic Euler step of the **P-drift**
+        ``mu_P = mu_Q + g.lambda`` (the noise is mean-zero, so the conditional
+        expectation of one step is ``z0 + mu_P(0, z0) * h``), then decodes with
+        the usual additive anchor ``r = r0 + (D(z_h) - D(z0))``:
+
+            E^P[r_h | z0] ≈ r0 + D(z0 + mu_P(0, z0) h) - D(z0).
+
+        This is the quantity matched to the realised future short rate by the
+        P/Q consistency loss; ``lambda`` is what reconciles the risk-neutral
+        drift (curve slope) with the physical drift (realised dynamics) — i.e.
+        the term premium.
+
+        Parameters
+        ----------
+        z0 : Tensor
+            Encoder state, shape ``(latent_dim,)`` or ``(1, latent_dim)``.
+        r0 : float or Tensor
+            Short-rate anchor at the as-of date (the observed short rate).
+        horizon : float
+            Forecast horizon in years.
+
+        Returns
+        -------
+        Tensor
+            Scalar forecast short rate.
+        """
+        z = z0 if z0.dim() == 2 else z0.unsqueeze(0)             # (1, d)
+        mu_p = self.nsde.f_P(0.0, z)                              # (1, d)
+        z_h = z + mu_p * float(horizon)
+        d0 = self.decoder(z)                                      # (1, 1)
+        dh = self.decoder(z_h)
+        r0t = r0 if isinstance(r0, Tensor) else torch.as_tensor(
+            float(r0), device=d0.device, dtype=d0.dtype
+        )
+        return (r0t.to(device=d0.device, dtype=d0.dtype) + (dh - d0)).reshape(())
+
+
     @torch.no_grad()
     def sample(self, *args, **kwargs) -> Tensor:
         """
@@ -626,7 +678,12 @@ class ShortRateModel(nn.Module):
             pass
 
         try:
-            info["decoder_config"] = _to_jsonable(getattr(self.decoder, "cfg", None))
+            # Prefer the spec the decoder was built from (network-built
+            # decoders have no ``.cfg``); fall back to a ``.cfg`` if present.
+            dec_cfg = getattr(self, "_decoder_spec", None)
+            if dec_cfg is None:
+                dec_cfg = getattr(self.decoder, "cfg", None)
+            info["decoder_config"] = _to_jsonable(dec_cfg)
         except Exception:
             pass
 

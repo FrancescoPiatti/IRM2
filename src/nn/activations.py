@@ -31,9 +31,16 @@ def _get_activation(activation):
     """
 
     if isinstance(activation, str):
-        activation = activation.lower()
-        if activation in ACTIVATION_REGISTRY:
-            return ACTIVATION_REGISTRY[activation]()
+        s = activation.strip()
+        # Recover a serialized class repr, e.g. when a config default that
+        # was the *class* ``nn.Identity`` got JSON-dumped via ``str(cls)``
+        # into "<class 'torch.nn.modules.linear.Identity'>". Round-trips
+        # through model_info / config serialization land here.
+        if s.startswith("<class") and "." in s:
+            s = s.rstrip("'>").split(".")[-1]
+        key = s.lower()
+        if key in ACTIVATION_REGISTRY:
+            return ACTIVATION_REGISTRY[key]()
         else:
             raise ValueError(f"Unsupported activation type: {activation}")
 

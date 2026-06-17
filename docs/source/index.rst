@@ -9,19 +9,23 @@ Treasury yield curves and Treasury futures.
 The model encodes a history of yield curves into a latent state, evolves the
 state under a learnable Neural SDE, decodes it into a short rate, and prices
 both the yield curve and Treasury futures (via cheapest-to-deliver Monte
-Carlo). Yields and futures are fit jointly under a single risk-neutral
-measure :math:`\mathbb{Q}`.
+Carlo). Yields and futures are fit jointly under the risk-neutral measure
+:math:`\mathbb{Q}`, with optional physical-measure (:math:`\mathbb{P}`)
+consistency that identifies the market price of risk.
 
 .. math::
 
    \mathcal{L}
    =
-   \lambda_y \, \mathcal{L}_{\mathrm{yield}}
-   +
-   \lambda_f \, \mathcal{L}_{\mathrm{fut}}
+   \lambda_y \,\mathcal{L}_{\text{yield}}
+   + \lambda_f \,\mathcal{L}_{\text{fut}}
+   + \lambda_c \,\mathcal{L}_{\text{cons}}
+   + \lambda_\sigma \,\mathcal{L}_{\text{vol}}
+   + \lambda_{\mathbb{P}} \,\mathcal{L}_{\mathbb{P}/\mathbb{Q}} .
 
-For the full mathematical specification, see ``project_description.md`` at
-the repository root.
+See :doc:`concepts/formulation` for the full mathematical specification, and
+the ``report/`` folder (PDF/HTML) for the modelling diagnostics
+behind each term.
 
 .. toctree::
    :maxdepth: 2
@@ -35,6 +39,7 @@ the repository root.
    :maxdepth: 2
    :caption: Concepts
 
+   concepts/formulation
    concepts/dataflow
    concepts/types
    concepts/pricing

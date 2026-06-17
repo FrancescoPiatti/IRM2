@@ -129,6 +129,35 @@ def _infer_encoder_input_dim(state: Dict[str, torch.Tensor]) -> Optional[int]:
     return None
 
 
+def _infer_decoder_cfg(state: Dict[str, torch.Tensor]) -> Optional[Dict[str, Any]]:
+    """
+    Recover a decoder spec from ``state_dict`` shapes when ``model_info``
+    didn't store one (an MLP decoder is an ``nn.Sequential`` with no
+    ``.cfg``). Returns:
+
+    - ``None`` for a plain linear decoder (``decoder.weight`` present, or no
+      decoder keys) — ShortRateModel builds the default ``nn.Linear``;
+    - a ``{"type": "mlp", ...}`` dict reconstructed from the
+      ``decoder.<idx>.weight`` Linear shapes otherwise.
+
+    Activations carry no parameters and can't be read back, so they default
+    to the project's MLP defaults (gelu hidden, identity out); this only
+    affects the forward, not which weights load.
+    """
+    lin = _branch_linear_shapes(state, "decoder")        # (out, in) per Linear
+    if len(lin) <= 1:
+        # default nn.Linear(latent, 1) -> single "decoder.weight"/"decoder.bias"
+        return None
+    return {
+        "type": "mlp",
+        "n_layers": len(lin) - 1,
+        "n_units": [int(s[0]) for s in lin[:-1]],
+        "dropout": None,
+        "activation": "gelu",
+        "out_activation": "identity",
+    }
+
+
 def _infer_bondnet_cfg(
     state: Dict[str, torch.Tensor],
     *,
@@ -303,7 +332,21 @@ class TrialAnalyzer:
 
         enc_cfg = EncoderCfg(**_filter_to_fields(EncoderCfg, enc_raw))
         nsde_cfg = NSDECfg(**_filter_to_fields(NSDECfg, nsde_raw))
-        decoder = dec_raw if (isinstance(dec_raw, dict) and dec_raw.get("type")) else None
+
+        # Decoder: model_info often stores None for a network-built decoder
+        # (an MLP/Sequential has no ``.cfg``). Fall back to the decoder spec
+        # recorded in the grid params (summary.json), then to inferring it
+        # from the state_dict shapes. None => default linear decoder.
+        decoder = None
+        if isinstance(dec_raw, dict) and dec_raw.get("type"):
+            decoder = dec_raw
+        else:
+            params = self.summary_json.get("params") or {}
+            sp = params.get("model.decoder")
+            if isinstance(sp, dict) and sp.get("type"):
+                decoder = sp
+            else:
+                decoder = _infer_decoder_cfg(state)
 
         # BondNet: prefer saved config, else infer from state_dict.
         bondnet_cfg = None

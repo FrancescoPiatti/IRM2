@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRM2 — Neural Short-Rate Model: Formulation, Diagnostics, Open Problems</title>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']],
+           displayMath: [['$$', '$$'], ['\\[', '\\]']],
+           macros: {
+             QQ:'{\\mathbb{Q}}', PP:'{\\mathbb{P}}', E:'{\\mathbb{E}}',
+             R:'{\\mathbb{R}}', dd:'{\\mathrm{d}}', sg:'{\\operatorname{sg}}'
+           } },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+  :root { --fg:#1a1a1a; --muted:#555; --rule:#e2e2e2; --accent:#0b5; --box:#f6f8fa; }
+  body { max-width: 820px; margin: 2.5rem auto; padding: 0 1.2rem;
+         font-family: Georgia, 'Times New Roman', serif; color: var(--fg);
+         line-height: 1.55; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin-bottom: .2rem; }
+  h2 { font-size: 1.25rem; margin-top: 2.2rem; border-bottom: 1px solid var(--rule);
+       padding-bottom: .25rem; }
+  h3 { font-size: 1.05rem; margin-top: 1.4rem; }
+  .subtitle { color: var(--muted); font-size: 1.05rem; margin-top: 0; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .abstract { background: var(--box); border: 1px solid var(--rule);
+              border-radius: 8px; padding: .8rem 1.1rem; font-size: .97rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .95rem; }
+  th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid var(--rule); }
+  th { border-bottom: 2px solid #bbb; }
+  code { background: var(--box); padding: .05rem .3rem; border-radius: 4px;
+         font-size: .9em; }
+  ol li, ul li { margin: .35rem 0; }
+  .note { color: var(--muted); font-size: .92rem; }
+  strong { color: #111; }
+</style>
+</head>
+<body>
+
+<h1>IRM2: A Neural Short-Rate Model for Joint Calibration of Treasury Yield Curves and Futures</h1>
+<p class="subtitle">Mathematical specification, diagnostics, and open problems</p>
+<p class="meta">Project report &middot; June 2026 &middot; companion to <code>report/project_report.tex</code></p>
+
+<div class="abstract">
+<strong>Abstract.</strong> IRM2 calibrates a latent-state neural stochastic
+differential equation (SDE) to the U.S. Treasury yield curve and Treasury
+futures. A recurrent encoder maps a window of observed curves to a latent
+initial condition; a Neural SDE evolves it under the risk-neutral measure
+$\QQ$; a decoder produces the short rate; and a Monte-Carlo pricer values
+zero-coupon bonds and the cheapest-to-deliver futures option. This document
+gives the precise formulation, the sequence of <em>identifiability</em>
+problems uncovered during development (volatility, the term premium, and the
+decoupling of the futures head), the terms added to resolve them, and the
+remaining open questions.
+</div>
+
+<h2>1. State-space construction</h2>
+<p>Let $\mathbf c_t\in\R^M$ be the observed yield curve at date $t$ ($M$
+constant-maturity SVENY pillars) and $x_t\in\R$ the observed overnight short
+rate. An encoder $E_\phi$ (a bidirectional LSTM) compresses a lookback window
+into a latent initial state</p>
+$$ z_0 = E_\phi\!\big(\mathbf c_{t-L:t},\,x_{t-L:t}\big)\in\R^d . $$
+<p>The latent state evolves under a Neural SDE with learnable drift $\mu_\theta$
+and diagonal diffusion $\sigma_\theta$,</p>
+$$ \dd z_s = \mu_\theta(s,z_s)\,\dd s + \sigma_\theta(s,z_s)\,\dd W_s^{\QQ},
+   \qquad s\in[0,T_{\max}], $$
+<p>integrated by Euler–Maruyama with step $\Delta=1/\texttt{spy}$. Two drift
+families are supported,</p>
+$$ \text{(simple)}\ \ \mu_\theta=f_\theta(s,z),
+   \qquad
+   \text{(OU)}\ \ \mu_\theta=\kappa_\theta(s,z)\big(\vartheta_\theta(s,z)-z\big),
+   \quad 0\le\kappa_\theta\le\kappa_{\max}. $$
+<p>A decoder $D_\psi:\R^d\to\R$ produces the short rate with an additive anchor
+pinning the front to the observed overnight rate,</p>
+$$ r_s = D_\psi(z_s) + \big(x_t - D_\psi(z_0)\big)
+   \;\Longrightarrow\; r_0 = x_t . $$
+<p>All Monte-Carlo paths share $z_0$, so the bracket is deterministic and
+$r_s = x_t + \big(D_\psi(z_s)-D_\psi(z_0)\big)$: the short-rate dynamics are the
+decoder's response to the latent displacement, anchored at $x_t$.</p>
+
+<h2>2. Risk-neutral pricing</h2>
+<h3>Zero-coupon bonds and yields</h3>
+$$ P(0,\tau)=\E^{\QQ}\!\Big[e^{-\int_0^\tau r_s\,\dd s}\Big],
+   \qquad y(\tau)=-\frac{\log P(0,\tau)}{\tau}, $$
+<p>computed in log-space for stability,
+$\log P(0,\tau)=\operatorname*{logsumexp}_{n}(-I^{(n)}_\tau)-\log N$ with
+$I^{(n)}_\tau=\Delta\sum_{s\le\tau} r^{(n)}_s$.</p>
+<h3>Convexity decomposition</h3>
+<p>A second-order cumulant expansion of $\log\E^{\QQ}[e^{-J}]$,
+$J=\int_0^\tau D_\psi(z_s)\dd s$, gives</p>
+$$ y(\tau)\approx
+   \underbrace{(x_t-D_0)}_{\text{level}}
+   +\underbrace{\tfrac1\tau\!\int_0^\tau\!\E[D_\psi(z_s)]\dd s}_{\text{expectations}}
+   -\underbrace{\tfrac1{2\tau}\Var\!\Big(\!\int_0^\tau\! D_\psi(z_s)\dd s\Big)}_{\text{convexity}} . $$
+<p>The convexity term scales with the squared implied short-rate vol
+$\sigma_r\approx\lVert\nabla D_\psi\rVert\,\sigma_z$. A realistic
+$\sigma_r\sim1\%$/yr gives $\sim 20$ bp of 10-year convexity; an uncontrolled
+$\sigma_r\sim40\%$/yr gives <em>hundreds of percent</em>, saturating the
+discount factor and destroying the curve — the central reason volatility must
+be pinned.</p>
+<h3>Treasury futures</h3>
+<p>For delivery $T_f$, basket $\mathcal B$ and conversion factors
+$\{\mathrm{CF}_i\}$,</p>
+$$ F=\E^{\QQ}\!\Big[\min_{i\in\mathcal B}\frac{B_i(z_{T_f})}{\mathrm{CF}_i}\Big], $$
+<p>the expected cheapest-to-deliver (CTD) ratio. The forward deliverable-bond
+prices $B_i$ come from a learned <strong>BondNet</strong> $B_\chi(z,b_i)$,
+avoiding a nested simulation.</p>
+
+<h2>3. Identifiability problems</h2>
+<p>Development repeatedly revealed that the calibration data does not constrain
+quantities the model needs. The three structural ones:</p>
+<ol>
+<li><strong>Volatility is not identified.</strong> Yields depend on $\sigma$ only
+through bp-level convexity; futures only weakly, via CTD optionality. Left free,
+the trained $\sigma_r$ collapsed to $0.1$–$0.4\%$/yr and the Monte-Carlo fan
+degenerated to a single line.</li>
+<li><strong>The futures head was decoupled from the rates.</strong> BondNet is a
+free function of $z$; nothing tied it to the discount factors of the
+<em>same</em> paths. A naive consistency penalty whose gradient flowed into the
+SDE <em>bent the yield curve to meet BondNet's par-anchored prices</em>, a
+spurious $-250$ to $-300$ bp droop in 5–10y yields.</li>
+<li><strong>The term premium is not identified under $\QQ$.</strong> A pure
+risk-neutral fit says nothing about physical dynamics; the market price of risk
+$\lambda$ is unobservable from prices alone.</li>
+</ol>
+<p>Two mechanism-level issues were also fixed: an OU drift with unbounded
+mean-reversion $\kappa$ erases $z_0$ over $1/\kappa$, collapsing the curve to a
+constant (since $y(\tau)\propto g(\kappa\tau)$, $g(x)=1-(1-e^{-x})/x\to1$); and
+scale/unit faults (percent vs. decimal, a $365$-vs-$252$ day-count mismatch
+between the calendar-year maturity grid and date-derived horizons).</p>
+
+<h2>4. Resolving terms in the objective</h2>
+$$ \mathcal L=
+   \lambda_y\mathcal L_{\text{yield}}
+   +\lambda_f\mathcal L_{\text{fut}}
+   +\lambda_c\mathcal L_{\text{cons}}
+   +\lambda_\sigma\mathcal L_{\text{vol}}
+   +\lambda_{\PP}\mathcal L_{\PP/\QQ}. $$
+<p><strong>Yield / futures.</strong> Absolute yield MSE on decimals; futures use
+a <em>relative</em> error so the weights are commensurable (absolute price MSE
+on $\$120$ contracts otherwise dwarfs yields by $10^3$–$10^5$).</p>
+<p><strong>BondNet–SDE consistency (LSMC).</strong> Discount each deliverable's
+reconstructed cashflows <em>pathwise</em> on the model's own rates,
+$\hat B_i^{(n)}=\sum_j c_{ij}\,e^{-(I^{(n)}_{t_{ij}}-I^{(n)}_{T_f})}$, and
+regress BondNet onto it:</p>
+$$ \mathcal L_{\text{cons}}
+   =\frac1{100^2}\,\E_n\!\Big[\big(B_\chi(z^{(n)}_{T_f},b_i)-\sg[\hat B_i^{(n)}]\big)^2\Big]. $$
+<p>$\E[\hat B_i\mid z_{T_f}]$ is the model-consistent bond price (Longstaff–
+Schwartz), so $B_\chi$ learns it with no nested simulation. The stop-gradient
+$\sg[\cdot]$ is essential: the gradient reaches BondNet only — the non-detached
+variant is what bent the curve.</p>
+<p><strong>Volatility anchor.</strong>
+$\mathcal L_{\text{vol}}=(\operatorname{std}_n[r^{(n)}_{1\mathrm y}]-\sigma^\star)^2$,
+$\sigma^\star\approx1\%$. Principled because, by Girsanov, the diffusion is
+<em>measure-invariant</em>, so a $\PP$-estimated vol is a valid prior for the
+$\QQ$-dynamics.</p>
+<p><strong>$\PP/\QQ$ consistency &amp; the term premium.</strong> The learned
+drift is $\mu^{\QQ}$. With market price of risk $\lambda$ and
+$\dd W^{\QQ}=\dd W^{\PP}+\lambda\,\dd s$, Girsanov gives</p>
+$$ \mu^{\PP}(s,z)=\mu^{\QQ}(s,z)+\sigma_\theta(s,z)\,\lambda . $$
+<p>A one-step physical forecast is matched to the realised future rate
+$h$ ahead,</p>
+$$ \hat r^{\PP}_{t+h}=x_t+D_\psi\big(z_0+\mu^{\PP}(0,z_0)h\big)-D_\psi(z_0),
+   \qquad
+   \mathcal L_{\PP/\QQ}=\big(\hat r^{\PP}_{t+h}-x_{t+h}\big)^2 . $$
+<p>This identifies $\lambda$ — the term premium (forward $=$ expected future
+rate $+\,\sigma\lambda$). With $\lambda_{\PP}=0$ the model is a pure
+$\QQ$-calibration ($\lambda\equiv0$); the grid runs both as a primary axis.</p>
+
+<h2>5. Identifiability summary</h2>
+<table>
+<thead><tr><th>Quantity</th><th>Identified by the data?</th><th>Resolving term</th></tr></thead>
+<tbody>
+<tr><td>curve level / slope</td><td>yes (yields)</td><td>$\mathcal L_{\text{yield}}$</td></tr>
+<tr><td>short-rate volatility</td><td><strong>no</strong> (vol-insensitive)</td><td>$\mathcal L_{\text{vol}}$ anchor</td></tr>
+<tr><td>deliverable bond prices</td><td>only via CTD min</td><td>$\mathcal L_{\text{cons}}$ (LSMC)</td></tr>
+<tr><td>term premium $\lambda$</td><td><strong>no</strong> under $\QQ$ alone</td><td>$\mathcal L_{\PP/\QQ}$</td></tr>
+</tbody>
+</table>
+<p class="note">The volatility and term-premium terms are anchors/priors, not
+fits — a property of the data, not of the architecture.</p>
+
+<h2>6. Open problems and future work</h2>
+<ol>
+<li><strong>The single-$z_0$ bottleneck.</strong> All day-specific information
+enters only through the initial condition. Conditioning the drift (and the OU
+long-run mean $\vartheta_\theta$) on the encoder embedding would make the
+<em>dynamics</em> day-specific and fix the OU pathology at its root.</li>
+<li><strong>One-factor decoder.</strong> A linear decoder makes
+$r=w^\top z+b$ — a one-factor model regardless of $d$. A multi-layer decoder
+(gridded) restores multi-factor curvature.</li>
+<li><strong>Honest model selection.</strong> Select on a per-maturity yield RMSE
+(bp) on a held-out temporal fold, not the aggregate loss whose scale is
+dominated by anchor terms.</li>
+<li><strong>A richer $\PP$ model.</strong> The current $\PP/\QQ$ term is a local,
+one-step drift match with constant $\lambda$. A full treatment makes
+$\lambda=\lambda(s,z)$ and matches the $\PP$-transition density over the window
+(a likelihood), giving a time-varying term premium.</li>
+<li><strong>Arbitrage-consistent futures.</strong> Price deliverables directly
+off the simulated curve so futures are arbitrage-consistent with yields by
+construction, rather than via an expectation-matched regression.</li>
+</ol>
+
+<p class="note"><strong>Status.</strong> The front of the curve fits to
+$\pm25$ bp, training is stable, futures price to $\sim1\%$. The failure mode
+under investigation is a long-end drift droop; the detached LSMC term, the
+volatility anchor, and the $\PP/\QQ$ axis target it directly, with falsifiable
+signatures: a non-degenerate fan of width $\sim\sigma^\star\sqrt\tau$, a flat
+per-maturity error, and a recovered $\lambda$ consistent with a positive term
+premium.</p>
+
+</body>
+</html>

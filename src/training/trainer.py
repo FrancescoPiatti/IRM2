@@ -662,15 +662,51 @@ class Trainer:
             loss_components["futures"] = float(fut_loss_raw.detach().cpu().item())
             day_loss = day_loss + lw_f * fut_loss_raw
 
-            # BondNet <-> SDE consistency (LSMC), computed by the pricer
-            # alongside price_futures. Ties BondNet's bond prices to the
-            # model's own pathwise discounting so the futures channel and
-            # the yield curve share one term structure.
+            # BondNet -> model-PV consistency (LSMC), computed by the pricer
+            # alongside price_futures. The target is detached inside the
+            # pricer (gradient reaches BondNet only). We add it to the
+            # objective ONLY during training: the term carries an
+            # irreducible pathwise-variance floor (~1e-3) that would
+            # otherwise dominate eval totals and grid selection — in
+            # GridSearch_YCFut_tier1_3 it was ~91% of the eval objective
+            # while the yield MSE was ~5%. It is always logged as a
+            # component for monitoring.
             cons_w = float(getattr(self.cfg, "bondnet_consistency_weight", 0.0))
             cons_loss = self.pricer.last_consistency_loss
             if cons_w > 0.0 and cons_loss is not None:
                 loss_components["bond_consistency"] = float(cons_loss.detach().cpu().item())
-                day_loss = day_loss + cons_w * cons_loss
+                if self.model.training:
+                    day_loss = day_loss + cons_w * cons_loss
+
+        # -------------------------------------------------------
+        # Short-rate volatility anchor (see TrainerCfg.rate_vol_target).
+        # The cross-path std of r at the 1y horizon estimates the
+        # annualised rate vol (std ≈ sigma_r * sqrt(1y)). Anchoring it to
+        # the historically measured vol is principled: by Girsanov the
+        # diffusion is identical under P and Q, and the calibration data
+        # (yields ≈ vol-insensitive) cannot identify it on its own.
+        vol_w = float(getattr(self.cfg, "rate_vol_weight", 0.0))
+        if vol_w > 0.0:
+            r2d = realisation.squeeze(-1) if realisation.dim() == 3 else realisation
+            idx_1y = min(int(self.pricer.steps_per_year), r2d.size(1) - 1)
+            sigma_hat = r2d[:, idx_1y].std()
+            vol_loss = (sigma_hat - float(self.cfg.rate_vol_target)) ** 2
+            loss_components["rate_vol"] = float(vol_loss.detach().cpu().item())
+            if self.model.training:
+                day_loss = day_loss + vol_w * vol_loss
+
+        # -------------------------------------------------------
+        # P/Q consistency: match the model's one-step physical-measure
+        # forecast of the short rate to the realised future short rate.
+        # Trains the market price of risk lambda and ties mu_Q (pricing) to
+        # mu_P (data). See TrainerCfg.pq_consistency_weight.
+        pq_w = float(getattr(self.cfg, "pq_consistency_weight", 0.0))
+        if pq_w > 0.0:
+            pq_loss = self._pq_consistency_loss(snapshot.date, latent_repr)
+            if pq_loss is not None:
+                loss_components["pq"] = float(pq_loss.detach().cpu().item())
+                if self.model.training:
+                    day_loss = day_loss + pq_w * pq_loss
 
         # -------------------------------------------------------
         # Bonds / Options (later)
@@ -678,6 +714,29 @@ class Trainer:
         # if snapshot.options is not None: ...
 
         return day_loss, loss_components
+
+
+    def _pq_consistency_loss(self, date: Date, latent_repr: Tensor) -> Optional[Tensor]:
+        """
+        Squared error between the model's one-step P-forecast of the short
+        rate at ``date + pq_horizon_years`` and the realised short rate.
+
+        Returns ``None`` if the realised future rate isn't available (e.g.
+        near the end of the data) so the caller can skip the term that day.
+        """
+        h = float(self.cfg.pq_horizon_years)
+        fut_ts = pd.Timestamp(date) + pd.Timedelta(days=int(round(h * 365.25)))
+        try:
+            r_future = self.dataloader.short_rate_store.get_rate_on_or_before(
+                fut_ts, device=self.device
+            )
+        except Exception:
+            return None
+        # z0 = encoder state (all simulated paths share it at t=0).
+        z0 = latent_repr[0:1, 0, :] if latent_repr.dim() == 3 else latent_repr[0:1, :]
+        r0 = self._get_r0(date)
+        r_forecast = self.model.forecast_short_rate_P(z0, r0, h)
+        return (r_forecast - r_future.to(r_forecast)) ** 2
 
 
     def _forward_one_date(self,
@@ -1539,6 +1598,10 @@ class Trainer:
             },
             "futures_relative_loss": bool(getattr(self.cfg, "futures_relative_loss", False)),
             "bondnet_consistency_weight": float(getattr(self.cfg, "bondnet_consistency_weight", 0.0)),
+            "rate_vol_target": getattr(self.cfg, "rate_vol_target", None),
+            "rate_vol_weight": float(getattr(self.cfg, "rate_vol_weight", 0.0)),
+            "pq_consistency_weight": float(getattr(self.cfg, "pq_consistency_weight", 0.0)),
+            "pq_horizon_years": float(getattr(self.cfg, "pq_horizon_years", 0.0)),
             "use_amp": self.use_amp,
             "grad_clip_norm": self.grad_clip_norm,
             "accumulate_windows": self.accumulate_windows,

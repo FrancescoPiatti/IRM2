@@ -235,17 +235,47 @@ class TrainerCfg:
     # decimal scale, and market yields can be ~0 → relative would blow up).
     futures_relative_loss: bool = False
 
-    # Weight of the BondNet <-> SDE consistency loss (LSMC). When > 0, the
-    # pricer regresses BondNet's deliverable-bond prices onto the model's
-    # OWN pathwise-discounted cashflows (computed on the same simulated
-    # short-rate paths — no nested simulation). This is what ties the
-    # futures channel to the yield-curve dynamics: without it, BondNet is a
-    # free head and "joint calibration" degenerates into two unrelated
-    # tasks sharing an encoder. The loss is normalised by 100² so it lives
-    # on the same dimensionless scale as the relative futures loss; 1.0 is
-    # a sensible starting weight. Gradients flow into BOTH BondNet and the
-    # SDE (bidirectional coupling) by design.
+    # Weight of the BondNet -> model-PV consistency loss (LSMC). When > 0,
+    # the pricer regresses BondNet's deliverable-bond prices onto the
+    # model's OWN pathwise-discounted cashflows (computed on the same
+    # simulated short-rate paths — no nested simulation). The regression
+    # target is DETACHED: gradients flow into BondNet only, never back
+    # through the discounting into the SDE. (The bidirectional variant was
+    # tried in GridSearch_YCFut_tier1_3 and bent the yield curve toward
+    # BondNet's par-anchored prices — a -250..-300 bp long-end droop.) The
+    # term is included in the training objective only; at eval it is
+    # logged as a component but excluded from total_loss, because its
+    # pathwise variance floor would otherwise dominate model selection.
     bondnet_consistency_weight: float = 0.0
+
+    # Short-rate volatility anchor. The yield loss is almost insensitive to
+    # the diffusion (convexity enters at the bp level) and the futures loss
+    # only weakly (CTD optionality), so the model's volatility is
+    # structurally UNDER-IDENTIFIED by the calibration data — left free, it
+    # drifts to degenerate values (tier1_3 trained to sigma_r ~ 0.1-0.4%/yr
+    # and the Monte-Carlo fan collapsed to a line). By Girsanov, the
+    # diffusion coefficient is the SAME under P and Q, so anchoring it to
+    # the historically measured short-rate vol is principled, not a hack.
+    # When ``rate_vol_weight > 0``, a penalty
+    #     (std_paths(r at 1y) - rate_vol_target)^2
+    # is added to the TRAINING objective (logged at eval, excluded from the
+    # eval total). ``rate_vol_target`` is annualised, in decimals
+    # (e.g. 0.01 = 1%/yr — the canonical USD short-rate vol).
+    rate_vol_target: Optional[float] = None
+    rate_vol_weight: float = 0.0
+
+    # P/Q joint calibration. When ``pq_consistency_weight > 0`` the training
+    # objective adds a physical-measure consistency term: the model's
+    # one-step P-forecast of the short rate (drift mu_P = mu_Q + g.lambda)
+    # is matched to the REALISED short rate ``pq_horizon_years`` ahead. This
+    # trains the market price of risk ``lambda`` and ties the risk-neutral
+    # dynamics (which price the curve) to the physical dynamics (which
+    # generate the data) — i.e. it identifies the term premium. With weight
+    # 0 the model is a pure Q-calibration (lambda stays at its 0 init). The
+    # term is train-only in the objective; logged as the ``pq`` component at
+    # eval.
+    pq_consistency_weight: float = 0.0
+    pq_horizon_years: float = 1.0 / 12.0   # 1-month-ahead forecast
 
     # Safety options
     skip_nan_loss: bool = True
@@ -294,6 +324,20 @@ class TrainerCfg:
             raise ValueError(
                 f"bondnet_consistency_weight must be >= 0; got {self.bondnet_consistency_weight}."
             )
+
+        if float(self.rate_vol_weight) < 0.0:
+            raise ValueError(f"rate_vol_weight must be >= 0; got {self.rate_vol_weight}.")
+        if float(self.rate_vol_weight) > 0.0:
+            if self.rate_vol_target is None or float(self.rate_vol_target) <= 0.0:
+                raise ValueError(
+                    "rate_vol_target must be a positive annualised decimal "
+                    "(e.g. 0.01 for 1%/yr) when rate_vol_weight > 0."
+                )
+
+        if float(self.pq_consistency_weight) < 0.0:
+            raise ValueError(f"pq_consistency_weight must be >= 0; got {self.pq_consistency_weight}.")
+        if float(self.pq_consistency_weight) > 0.0:
+            _check_positive_value(self.pq_horizon_years, 'pq_horizon_years')
 
         # Early stopping sub-config
         if self.early_stopping.enabled:

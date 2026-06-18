@@ -348,9 +348,13 @@ def main() -> None:
     base_tr.compile_nsde = False
     base_tr.grad_clip_norm = 0.5
 
-    # Early stopping — 20 epochs of patience on the EMA-smoothed train
-    # loss. Warmup epochs (20) won't trigger early-stop on their own.
-    base_tr.early_stopping.enabled = True
+    # Early stopping — DISABLED. It monitors the EMA of the *total* train
+    # loss, which is dominated by the consistency / vol-anchor variance
+    # floor (~1e-3); yield-scale progress (~1e-4) is invisible to it, so it
+    # cuts training short of the best curve (latest_run_analysis.md §4).
+    # Run the full epoch budget instead; reinstate only with a yield-curve
+    # metric on a held-out fold as the monitor.
+    base_tr.early_stopping.enabled = False
     base_tr.early_stopping.patience = 20
     base_tr.early_stopping.min_delta = 1e-4
 

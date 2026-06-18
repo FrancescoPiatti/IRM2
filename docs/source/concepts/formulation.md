@@ -1,161 +1,144 @@
 # Mathematical formulation
 
-This page is the precise specification of the model the code implements:
-the state-space construction, the risk-neutral pricing maps, the training
-objective, and the $\mathbb{P}/\mathbb{Q}$ extension.
+The precise specification of the model: the construction of each block
+(encoder, SDE, decoder, BondNet), the risk-neutral pricing maps, the
+$\mathbb{Q}$-objective, a catalogue of the problems found during
+development, and the optional $\mathbb{P}/\mathbb{Q}$ extension. The
+companion `report/` folder (PDF/HTML) carries the same content with the
+full diagnostic narrative.
 
-## 1. State space
+## 1. Model construction
 
-Let $\{\mathbf{c}_t\}$ be the observed daily yield curve history
-($\mathbf{c}_t \in \mathbb{R}^{M}$, the $M$ SVENY pillars) and $\{x_t\}$
-the observed short rate. An encoder $E_\phi$ (a recurrent network) maps a
-lookback window to a latent initial state
+The model is a composition
+$\text{history}\xrightarrow{E_\phi}z_0\xrightarrow{\text{SDE}_\theta}(z_s)\xrightarrow{D_\psi}(r_s)\to\text{prices}$,
+plus an auxiliary network $B_\chi$ for deliverable bonds.
 
-$$
-z_0 \;=\; E_\phi\!\big(\mathbf{c}_{t-L:t},\, x_{t-L:t}\big) \in \mathbb{R}^{d}.
-$$
+### 1.1 Encoder
 
-The latent state evolves under a **Neural SDE** with learnable drift
-$\mu_\theta$ and diffusion $\sigma_\theta$,
-
-$$
-\mathrm{d}z_s \;=\; \mu_\theta(s, z_s)\,\mathrm{d}s
-            \;+\; \sigma_\theta(s, z_s)\,\mathrm{d}W_s^{\mathbb{Q}},
-\qquad s\in[0,T_{\max}],
-$$
-
-simulated by Euler–Maruyama on a grid of step $\Delta = 1/\texttt{steps\_per\_year}$.
-Two drift families are supported:
+With lookback $L$ and stride $\nu$, the input is the window of $M$ SVENY
+pillars stacked with the overnight rate $x$,
+$X_t=[\mathbf c_{t-\nu(L-1)},\dots,\mathbf c_t\,;\,x_{t-\nu(L-1)},\dots,x_t]\in\mathbb{R}^{L\times(M+1)}$.
+A fixed preprocessing rescales to percent units, $\pi(X)=100X$ (raw decimal
+yields move by $\sim5\times10^{-4}$/day — too weak a signal; problem **E3**).
+The latent initial state is
 
 $$
-\textbf{(simple)}\;\; \mu_\theta = f_\theta(s,z), \qquad
-\textbf{(OU)}\;\; \mu_\theta = \kappa_\theta(s,z)\,\big(\vartheta_\theta(s,z)-z\big),
+z_0=\mathcal N\!\Big(W\,\mathrm{LSTM}_\phi^{\leftrightarrow}\big(\pi(X_t)\big)_L+b\Big)\in\mathbb{R}^d,
 $$
 
-with $\kappa_\theta\ge 0$ (softplus) capped at $\kappa_{\max}$.
+a bidirectional LSTM (last step) + affine readout + output normalisation
+$\mathcal N\in\{\text{LayerNorm},\text{RMSNorm}\}$, which fixes $\lVert z_0\rVert$
+so the *direction* of $z_0$ carries the day. $z_0$ is the **only**
+day-specific quantity in the model (problem **A1**).
 
-A decoder $D_\psi:\mathbb{R}^d\to\mathbb{R}$ produces the short rate, with
-an **additive anchor** that pins the front of the curve to the observed
-short rate $x_t$:
+### 1.2 Latent dynamics (Neural SDE)
 
 $$
-r_s \;=\; D_\psi(z_s) \;+\; \big(x_t - D_\psi(z_0)\big),
-\qquad\text{so}\quad r_0 = x_t .
+\mathrm{d}z_s=\mu_\theta(s,z_s)\,\mathrm{d}s+\sigma_\theta(s,z_s)\,\mathrm{d}W_s^{\mathbb{Q}},
+\qquad\text{diagonal noise,}
 $$
+
+time-inhomogeneous (time is a network input). Two drift families:
+
+$$
+\textbf{(simple)}\ \mu_\theta=f_\theta(s,z),\qquad
+\textbf{(OU)}\ \mu_\theta=\kappa_\theta\odot(\vartheta_\theta-z),\ \ 0\le\kappa_\theta\le\kappa_{\max}.
+$$
+
+The diffusion factors a magnitude scale from a shape network,
+$\sigma_\theta=\eta\,\zeta_\theta$, $\zeta_\theta\ge0$; $\eta$ sets the
+implied vol *by construction* (problem **M2**). Integration is
+Euler–Maruyama, step $\Delta=1/\texttt{spy}$, $N$ paths sharing $z_0$.
+
+### 1.3 Decoder and short-rate anchor
+
+$$
+r_s=D_\psi(z_s)+\big(x_t-D_\psi(z_0)\big)
+\;\Longrightarrow\;
+r_s=x_t+\big(D_\psi(z_s)-D_\psi(z_0)\big),\quad r_0=x_t.
+$$
+
+A linear $D_\psi=w^\top z+b$ makes $r$ a scalar projection of $z$ — one factor
+regardless of $d$ (problem **A2**); a multilayer decoder restores curvature.
+
+### 1.4 BondNet (deliverable bonds)
+
+Futures pricing needs each deliverable's forward price as a function of
+$z_{T_f}$ — a conditional expectation $\mathbb{E}^{\mathbb{Q}}[\cdot\mid z_{T_f}]$.
+A network learns it from static features $b_i\in\mathbb{R}^8$ (maturity,
+coupon timing, coupon, frequency, accruals):
+
+$$
+B_\chi(z,b_i)=\rho\big(g_{\text{fus}}[\,g_z(z)\,;\,g_b(b_i)\,]\big),\quad \rho=\text{softplus},
+$$
+
+a two-branch late fusion returning a dirty price per $100$ face (output bias
+initialised near par; problem **E1**). $B_\chi$ is a priori *unconstrained* —
+not tied to the simulated discount factors (defect **A3**).
 
 ## 2. Risk-neutral pricing
 
-### Zero-coupon bonds and yields
+**Yields.** With $I^{(n)}_\tau=\Delta\sum_{s_k\le\tau}r^{(n)}_{s_k}$,
 
 $$
-P(0,\tau) \;=\; \mathbb{E}^{\mathbb{Q}}\!\Big[\exp\big(-\!\textstyle\int_0^\tau r_s\,\mathrm{d}s\big)\Big],
-\qquad
-y(\tau) \;=\; -\frac{\log P(0,\tau)}{\tau}.
+P(0,\tau)=\mathbb{E}^{\mathbb{Q}}[e^{-I_\tau}]
+=\exp\!\big(\operatorname*{logsumexp}_n(-I^{(n)}_\tau)-\log N\big),
+\qquad y(\tau)=-\tfrac1\tau\log P(0,\tau).
 $$
 
-The expectation is a Monte-Carlo average over $N$ paths; the code uses a
-numerically stable log-sum-exp,
+**Convexity.** $y(\tau)\approx(x_t-D_0)+\tfrac1\tau\int_0^\tau\mathbb{E}[D_\psi(z_s)]\mathrm{d}s-\tfrac1{2\tau}\mathrm{Var}(\int_0^\tau D_\psi(z_s)\mathrm{d}s)$;
+the last term scales with $\sigma_r^2$, $\sigma_r\approx\lVert\nabla D_\psi\rVert\sigma_z$
+(problems **M1, M2**).
+
+**Futures (CTD).** With delivery index $\iota_f=\max\{k:s_k\le T_f\}$ and
+conversion factors $\{\mathrm{CF}_i\}$,
 
 $$
-\log P(0,\tau)\;=\;\operatorname*{logsumexp}_{n}\big(-I^{(n)}_\tau\big)-\log N,
-\qquad I^{(n)}_\tau=\Delta\!\!\sum_{s\le\tau} r^{(n)}_s .
+F=\mathbb{E}^{\mathbb{Q}}\!\Big[\min_{i\in\mathcal B}\tfrac{B_\chi(z_{\iota_f},b_i)}{\mathrm{CF}_i}\Big],
 $$
 
-**Convexity.** With $r_s = r_0 + (D_\psi(z_s)-D_\psi(z_0))$ and $z_0$ shared
-across paths, a cumulant expansion gives
+the inner $\min$ being the cheapest-to-deliver option (a segmented reduction
+across active baskets).
+
+## 3. Risk-neutral objective
 
 $$
-y(\tau)\;\approx\;
-\underbrace{(x_t-D_0)}_{\text{level}}
-+\underbrace{\frac{1}{\tau}\!\int_0^\tau\!\mathbb{E}[D_\psi(z_s)]\,\mathrm{d}s}_{\text{expectations}}
--\underbrace{\frac{\operatorname{Var}\!\big(\int_0^\tau D_\psi(z_s)\,\mathrm{d}s\big)}{2\tau}}_{\text{convexity}} .
+\mathcal L_{\mathbb{Q}}=\lambda_y\mathcal L_{\text{yield}}+\lambda_f\mathcal L_{\text{fut}}
++\lambda_c\mathcal L_{\text{cons}}+\lambda_\sigma\mathcal L_{\text{vol}}.
 $$
 
-The convexity term scales with the *implied short-rate volatility*
-$\sigma_r \approx \lVert\nabla D_\psi\rVert\,\sigma_z$; keeping it at the
-~bp level requires $\sigma_r\sim 1\%/\text{yr}$, which is why the diffusion
-magnitude must be controlled (§4).
+Yield = absolute MSE; futures = relative error (problem **E5**); the
+**LSMC consistency** term regresses BondNet onto the model's own
+pathwise-discounted cashflows with a stop-gradient (gradient to BondNet only;
+**A3**); the **vol anchor** pins the $1$y cross-path std to $\sigma^\star\approx1\%$
+(**M1**).
 
-### Treasury futures (cheapest-to-deliver)
+## 4. Problems (catalogue)
 
-For a contract with delivery $T_f$ and deliverable basket
-$\mathcal{B}$ with conversion factors $\{\mathrm{CF}_i\}$,
-
-$$
-F \;=\; \mathbb{E}^{\mathbb{Q}}\!\Big[\min_{i\in\mathcal{B}}\frac{B_i(z_{T_f})}{\mathrm{CF}_i}\Big],
-$$
-
-where $B_i$ is the (forward) deliverable bond price. The code learns $B_i$
-with a **BondNet** $B_\chi(z, b_i)$ taking the latent state and bond
-features $b_i$ — avoiding a nested simulation.
-
-## 3. Training objective
-
-$$
-\mathcal{L}
-=\lambda_y \mathcal{L}_{\text{yield}}
-+\lambda_f \mathcal{L}_{\text{fut}}
-+\lambda_c \mathcal{L}_{\text{cons}}
-+\lambda_\sigma \mathcal{L}_{\text{vol}}
-+\lambda_{\mathbb{P}} \mathcal{L}_{\mathbb{P}/\mathbb{Q}} .
-$$
-
-- **Yield** — absolute MSE on decimals,
-  $\mathcal{L}_{\text{yield}}=\frac1M\sum_\tau (y(\tau)-y^{\star}(\tau))^2$.
-- **Futures** — *relative* error (dimensionless, so $\lambda$'s are
-  comparable), $\mathcal{L}_{\text{fut}}=\frac1{|\mathcal{F}|}\sum_k\big((F_k-F^\star_k)/F^\star_k\big)^2$.
-- **BondNet ↔ SDE consistency (LSMC).** Regress BondNet onto the model's
-  own pathwise-discounted cashflows, computed on the *same* paths (no
-  nested simulation). With $\hat B_i^{(n)} = \sum_j c_{ij}\,e^{-(I^{(n)}_{t_{ij}}-I^{(n)}_{T_f})}$,
-
-  $$
-  \mathcal{L}_{\text{cons}}=\frac1{100^2}\,\mathbb{E}_n\!\Big[\big(B_\chi(z^{(n)}_{T_f},b_i)-\operatorname{sg}[\hat B_i^{(n)}]\big)^2\Big],
-  $$
-
-  where $\operatorname{sg}[\cdot]$ is stop-gradient: the gradient reaches
-  BondNet only, never the SDE (a non-detached version bends the curve).
-- **Volatility anchor.** The data barely identifies $\sigma$, so pin the
-  $1$-year cross-path std to the historically measured rate vol
-  $\sigma^\star$ ($\approx 1\%$):
-  $\mathcal{L}_{\text{vol}}=(\operatorname{std}_n[r^{(n)}_{1\mathrm{y}}]-\sigma^\star)^2$.
-  Legitimate because, by Girsanov, $\sigma$ is **measure-invariant**.
-
-## 4. The $\mathbb{P}/\mathbb{Q}$ extension
-
-The drift $\mu_\theta$ learned above is the **risk-neutral** drift
-$\mu^{\mathbb{Q}}$. By Girsanov, with market price of risk
-$\lambda\in\mathbb{R}^{d}$ and $\mathrm{d}W^{\mathbb{Q}}=\mathrm{d}W^{\mathbb{P}}+\lambda\,\mathrm{d}s$,
-the **physical** drift is
-
-$$
-\mu^{\mathbb{P}}(s,z)\;=\;\mu^{\mathbb{Q}}(s,z)\;+\;\sigma_\theta(s,z)\,\lambda .
-$$
-
-The volatility is the same under both measures. The $\mathbb{P}/\mathbb{Q}$
-consistency term matches a one-step physical forecast of the short rate to
-the realised future rate $h$ ahead,
-
-$$
-\widehat r^{\,\mathbb{P}}_{t+h}
-= x_t + D_\psi\!\big(z_0+\mu^{\mathbb{P}}(0,z_0)\,h\big)-D_\psi(z_0),
-\qquad
-\mathcal{L}_{\mathbb{P}/\mathbb{Q}}=\big(\widehat r^{\,\mathbb{P}}_{t+h}-x_{t+h}\big)^2 .
-$$
-
-This is the only place a physical-measure quantity enters; it identifies
-$\lambda$ (the **term premium**: forward rate $=$ expected future rate
-$+\,\sigma\lambda$). With $\lambda_{\mathbb{P}}=0$ the model is a pure
-$\mathbb{Q}$-calibration and $\lambda\equiv 0$.
-
-## 5. Known identifiability issues (and the corresponding terms)
-
-| Quantity | Identified by the data? | Mechanism in the code |
+| Type | Problem | Resolution |
 |---|---|---|
-| curve level / slope | yes (yields) | $\mathcal{L}_{\text{yield}}$ |
-| short-rate volatility | **no** (yields are vol-insensitive) | $\mathcal{L}_{\text{vol}}$ anchor |
-| deliverable bond prices | only via CTD min | $\mathcal{L}_{\text{cons}}$ (LSMC) |
-| term premium / $\lambda$ | **no** under $\mathbb{Q}$ alone | $\mathcal{L}_{\mathbb{P}/\mathbb{Q}}$ |
+| **M1** math | volatility unidentified (yields vol-insensitive) | vol anchor (Girsanov: $\sigma$ measure-invariant) |
+| **M2** math | convexity blow-up at large $\sigma_r$ | magnitude scale $\eta$ |
+| **M3** math | OU erases $z_0$: $y\propto g(\kappa\tau)\to$ flat | cap $\kappa\le\kappa_{\max}$ |
+| **A1** arch | single-$z_0$ bottleneck (global dynamics) | *open* — day-condition the drift |
+| **A2** arch | linear decoder ⇒ one-factor | multilayer decoder (grid axis) |
+| **A3** arch | BondNet decoupled from rates | LSMC consistency (detached) |
+| **E1** eng | gradient explosion / NaN over long unroll | short $\Delta$, init, scales, clip, guard |
+| **E2** eng | dropout in SDE ⇒ train/eval mismatch | removed |
+| **E3** eng | encoder input too small | percent preprocessing |
+| **E4** eng | dead short-rate target | weight 0 |
+| **E5** eng | absolute futures MSE dominates | relative error |
+| **E6** eng | selection on aggregate loss | per-maturity bp RMSE on a fold |
+| **E7** eng | percent/decimal, 365-vs-252, NaN CF | loader fixes |
 
-These are *structural* — the calibration data does not pin volatility or
-the market price of risk, so the corresponding terms are anchors/priors,
-not fits. See the ``report/`` folder for the empirical diagnostics.
+## 5. The $\mathbb{P}/\mathbb{Q}$ extension (optional)
+
+Off by default; logically separate from the $\mathbb{Q}$-calibration. The
+learned drift is $\mu^{\mathbb{Q}}$; with market price of risk $\lambda$ and
+$\mathrm{d}W^{\mathbb{Q}}=\mathrm{d}W^{\mathbb{P}}+\lambda\,\mathrm{d}s$,
+Girsanov gives $\mu^{\mathbb{P}}=\mu^{\mathbb{Q}}+\sigma_\theta\lambda$. A
+one-step physical forecast is matched to the realised future rate $h$ ahead,
+$\mathcal L_{\mathbb{P}/\mathbb{Q}}=(\hat r^{\mathbb{P}}_{t+h}-x_{t+h})^2$ with
+$\hat r^{\mathbb{P}}_{t+h}=x_t+D_\psi(z_0+\mu^{\mathbb{P}}(0,z_0)h)-D_\psi(z_0)$.
+This identifies the term premium $\lambda$; with $\lambda_{\mathbb{P}}=0$ the
+model is a pure $\mathbb{Q}$-calibration. The grid runs both.

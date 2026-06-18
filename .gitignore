@@ -13,6 +13,7 @@ markdowns/
 results/
 GridSearch_YCFut_tier1_2/
 GridSearch_YCFut_tier1_3/
+GridSearch_YCFut_tier1_4/
 
 src/__pycache__/
 src/dataloader/__pycache__/

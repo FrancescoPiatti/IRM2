@@ -100,14 +100,6 @@ class BaseNSDE(nn.Module):
         mrm = getattr(config, "mean_reversion_max", None)
         self.mean_reversion_max = float(mrm) if mrm else None
 
-        # Market price of risk lambda (one per Brownian factor). The drift
-        # learned by f() is the RISK-NEUTRAL drift mu_Q used for pricing.
-        # The physical-measure drift is mu_P = mu_Q + g . lambda (Girsanov:
-        # dW_Q = dW_P + lambda dt). lambda is trained only when the P/Q
-        # consistency loss is active (TrainerCfg.pq_consistency_weight > 0);
-        # initialised to 0 so the model starts at P = Q (zero term premium).
-        self.market_price_of_risk = nn.Parameter(torch.zeros(self.noise_dim))
-
         # Optional smooth coefficient bounds (None => unbounded).
         db = getattr(config, "drift_bound", None)
         gb = getattr(config, "diffusion_bound", None)
@@ -141,6 +133,15 @@ class BaseNSDE(nn.Module):
             self.diffusion_out = self.latent_dim
         elif self.noise_type == 'general':
             self.diffusion_out = self.latent_dim * self.noise_dim
+
+        # Market price of risk lambda (one per Brownian factor). The drift
+        # learned by f() is the RISK-NEUTRAL drift mu_Q used for pricing;
+        # the physical-measure drift is mu_P = mu_Q + g . lambda (Girsanov:
+        # dW_Q = dW_P + lambda dt). Trained only when the P/Q consistency
+        # loss is active (TrainerCfg.pq_consistency_weight > 0); initialised
+        # to 0 so the model starts at P = Q (zero term premium). Created
+        # AFTER ``noise_dim`` is resolved above.
+        self.market_price_of_risk = nn.Parameter(torch.zeros(self.noise_dim))
 
         # Reusable time-column buffer for the ``[z | t]`` packing inside f/g.
         # torchsde calls f and g hundreds-to-thousands of times per

@@ -156,7 +156,7 @@ def main() -> None:
     base_tr.grad_clip_norm = 1.0
     base_tr.log_every_n_windows = 20
 
-    base_tr.early_stopping.enabled = True
+    base_tr.early_stopping.enabled = False
     base_tr.early_stopping.patience = 10
     base_tr.early_stopping.min_delta = 1e-4
 

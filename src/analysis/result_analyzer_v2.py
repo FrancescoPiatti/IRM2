@@ -382,6 +382,10 @@ class TrialAnalyzer:
         )
 
         missing, unexpected = model.load_state_dict(state, strict=False)
+        # ``market_price_of_risk`` is created by current code but absent from
+        # checkpoints trained before the P/Q extension — an expected, benign
+        # missing key (it stays at its zero init = no term premium).
+        missing = [k for k in missing if not k.endswith("market_price_of_risk")]
         if missing:
             print(f"[TrialAnalyzer] WARNING: {len(missing)} missing keys on load "
                   f"(first few: {list(missing)[:4]})")
@@ -417,6 +421,14 @@ class TrialAnalyzer:
         cfg.loss_weights.yield_curve = self.loss_weights[0]
         cfg.loss_weights.short_rate = self.loss_weights[1]
         cfg.loss_weights.futures = self.loss_weights[2]
+        # Carry the auxiliary-term switches from the trained config so a
+        # read-only forward reproduces every logged component (consistency,
+        # vol anchor, P/Q) for the diagnostics.
+        for fld in ("futures_relative_loss", "bondnet_consistency_weight",
+                    "rate_vol_target", "rate_vol_weight",
+                    "pq_consistency_weight", "pq_horizon_years"):
+            if ti.get(fld) is not None:
+                setattr(cfg, fld, ti[fld])
         cfg.results_root = str(self._ensure_out())
         cfg.run_name = "trainer_readonly"
         cfg.use_amp = False
@@ -778,6 +790,139 @@ class TrialAnalyzer:
         }
 
     # -----------------------------------------------------------------
+    # Do the improvements make sense?
+    # -----------------------------------------------------------------
+
+    def improvement_diagnostics(self, date: Optional[Date] = None,
+                                *, n_paths: Optional[int] = None) -> pd.DataFrame:
+        """
+        Check whether the modelling fixes did what they claim, on ``date``.
+
+        Reads which auxiliary terms were active in the trained run (from
+        ``training_info``) so each check is interpreted in context, then
+        evaluates the falsifiable signatures: curve fit and long-end droop,
+        implied short-rate volatility and fan width, the market price of risk
+        (term premium), the BondNet price level, and — for an OU model — the
+        capped mean-reversion rate. Returns a tidy verdict table and also
+        prints it.
+        """
+        ti = self.model_info.get("training_info", {}) or {}
+
+        def _active(k: str) -> bool:
+            v = ti.get(k)
+            try:
+                return v is not None and float(v) > 0.0
+            except (TypeError, ValueError):
+                return False
+
+        vol_on, pq_on, cons_on = _active("rate_vol_weight"), _active("pq_consistency_weight"), _active("bondnet_consistency_weight")
+        vol_target = ti.get("rate_vol_target")
+
+        ev = list((self.summary_json.get("eval_losses") or {}).keys())
+        date = pd.Timestamp(date) if date is not None else (pd.Timestamp(ev[0]) if ev else None)
+        if date is None:
+            raise RuntimeError("improvement_diagnostics needs a date (none in summary.json).")
+
+        rows: List[Dict[str, Any]] = []
+        def add(check, value, expected, verdict, note=""):
+            rows.append({"check": check, "value": value, "expected": expected,
+                         "verdict": verdict, "note": note})
+
+        # --- curve fit + long-end droop -------------------------------
+        try:
+            yt = self.yield_curve_table(date, n_paths=n_paths)
+            err = yt["error_bp"].to_numpy(); mat = yt["maturity_y"].to_numpy()
+            front_rmse = float(np.sqrt(np.mean(err[mat <= 3] ** 2)))
+            long_err = float(err[-1])
+            slope = float(np.polyfit(mat, err, 1)[0])
+            add("front 1-3y RMSE (bp)", round(front_rmse, 1), "< 25",
+                "PASS" if front_rmse < 25 else "WARN")
+            add("10y error (bp)", round(long_err, 1), "|.| < 50",
+                "PASS" if abs(long_err) < 50 else "FAIL",
+                "long-end droop" if long_err < -100 else "")
+            add("error slope (bp/yr)", round(slope, 1), "~ 0",
+                "PASS" if abs(slope) < 10 else "WARN",
+                "shape error grows with maturity" if abs(slope) >= 10 else "")
+        except Exception as e:
+            add("yield checks", "n/a", "", "ERROR", str(e)[:70])
+
+        # --- implied volatility + fan ---------------------------------
+        try:
+            sim = self.simulate(date, n_paths=n_paths)
+            ts, sr = sim["ts"], sim["short_rate"]
+            i1 = int(np.argmin(np.abs(ts - 1.0)))
+            sigma_1y = float(sr[:, i1].std())
+            band = float(np.percentile(sr[:, -1], 95) - np.percentile(sr[:, -1], 5))
+            if vol_on and vol_target:
+                exp = f"~ {float(vol_target)*100:.1f}%"
+                v = "PASS" if 0.5*float(vol_target) <= sigma_1y <= 2*float(vol_target) else "WARN"
+            else:
+                exp = "(vol anchor OFF)"
+                v = "WARN" if sigma_1y < 2e-3 else "INFO"
+            add("implied vol sigma(1y) (%)", round(sigma_1y*100, 3), exp, v,
+                "fan collapsed -> vol unidentified" if sigma_1y < 2e-3 else "")
+            add("fan 5-95% width @10y (%)", round(band*100, 3), "> 0.5",
+                "PASS" if band > 5e-3 else "WARN",
+                "degenerate (near-deterministic)" if band < 5e-3 else "")
+        except Exception as e:
+            add("vol/fan checks", "n/a", "", "ERROR", str(e)[:70])
+
+        # --- market price of risk / term premium ----------------------
+        try:
+            lam = self.model.nsde.market_price_of_risk.detach().cpu().numpy()
+            lam_norm = float(np.sqrt(float((lam ** 2).sum())))
+            if pq_on:
+                add("||lambda|| term premium", round(lam_norm, 4), "> 0",
+                    "PASS" if lam_norm > 1e-4 else "WARN", "P/Q active but lambda~0")
+            else:
+                add("||lambda|| term premium", round(lam_norm, 4), "~0 (Q-only)", "INFO",
+                    "P/Q OFF in this run")
+        except Exception as e:
+            add("lambda check", "n/a", "", "ERROR", str(e)[:70])
+
+        # --- BondNet level + LSMC residual ----------------------------
+        try:
+            fr = self.futures_report(date, n_paths=n_paths)
+            bs = (fr or {}).get("bond_value_stats") or {}
+            blevel = bs.get("mean")
+            if blevel is not None:
+                add("BondNet mean price", round(float(blevel), 2), "par 85-115",
+                    "PASS" if 85 < float(blevel) < 115 else "WARN",
+                    "stuck at init 100?" if abs(float(blevel) - 100) < 0.05 else "")
+            cl = self._trainer.pricer.last_consistency_loss if self._trainer is not None else None
+            if cons_on and cl is not None:
+                add("LSMC residual (norm.)", round(float(cl), 5), "small + falling", "INFO")
+        except Exception as e:
+            add("bondnet/consistency check", "n/a", "", "ERROR", str(e)[:70])
+
+        # --- OU mean-reversion cap ------------------------------------
+        try:
+            nsde = self.model.nsde
+            if hasattr(nsde, "mean_reversion") and self._trainer is not None:
+                tr = self._trainer
+                with torch.no_grad():
+                    ts_t = tr._make_ts(tr._get_snapshot(date))
+                    lat = tr.get_latent_representation_from_date(date, n_paths=2, ts=ts_t)
+                    kappa = nsde.mean_reversion(nsde._pack_tz(0.0, lat[:, 0, :]))
+                    if nsde.mean_reversion_max is not None:
+                        kappa = nsde._soft_bound(kappa, nsde.mean_reversion_max)
+                    kbar = float(kappa.mean().item())
+                cap = nsde.mean_reversion_max
+                add("OU kappa (mean rev.)", round(kbar, 3),
+                    f"<= {cap}" if cap else "(uncapped!)",
+                    "PASS" if (cap is not None and kbar <= cap + 1e-6) else "WARN",
+                    "z0 erased over 1-10y if large" if cap is None else "")
+        except Exception as e:
+            add("OU kappa check", "n/a", "", "ERROR", str(e)[:70])
+
+        df = pd.DataFrame(rows, columns=["check", "value", "expected", "verdict", "note"])
+        hdr = (f"\n=== Improvement diagnostics @ {date.date()} ===\n"
+               f"active terms: vol_anchor={vol_on}  P/Q={pq_on}  LSMC_consistency={cons_on}\n")
+        print(hdr + df.to_string(index=False))
+        df.attrs["header"] = hdr
+        return df
+
+    # -----------------------------------------------------------------
     # Orchestration
     # -----------------------------------------------------------------
 
@@ -867,6 +1012,14 @@ class TrialAnalyzer:
                         produced["tables"].append(f"futures_{pd.Timestamp(sd).date()}.csv")
                 except Exception as e:
                     print(f"[TrialAnalyzer] futures_report failed: {e}")
+                try:
+                    ddf = self.improvement_diagnostics(sd, n_paths=n_paths)
+                    ddf.to_csv(out / f"improvement_diagnostics_{pd.Timestamp(sd).date()}.csv", index=False)
+                    (out / f"improvement_diagnostics_{pd.Timestamp(sd).date()}.txt").write_text(
+                        str(ddf.attrs.get("header", "")) + ddf.to_string(index=False))
+                    produced["tables"].append(f"improvement_diagnostics_{pd.Timestamp(sd).date()}.csv")
+                except Exception as e:
+                    print(f"[TrialAnalyzer] improvement_diagnostics failed: {e}")
 
             sds = surface_dates or ev_dates
             if sds and len(sds) >= 2:

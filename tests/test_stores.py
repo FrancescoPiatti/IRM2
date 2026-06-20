@@ -1,6 +1,6 @@
 """
 Tests for the individual data stores: YieldCurveStore, ShortRateStore,
-FuturesStore, BondMetadataStore. These exercise the on-disk CSVs in `data2/`.
+FuturesStore, BondMetadataStore. These exercise the on-disk CSVs in `data/`.
 """
 import pandas as pd
 import pytest

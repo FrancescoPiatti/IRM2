@@ -8,7 +8,7 @@ exactly where each piece of code lives.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  data2/                                                              │
+│  data/                                                              │
 │   ├── yield_curves.csv         ◄── canonical calendar (yield dates)  │
 │   ├── short_rate.csv                                                 │
 │   ├── futures.csv                                                    │

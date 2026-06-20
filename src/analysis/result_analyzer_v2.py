@@ -25,7 +25,7 @@ Static (artifacts only, no data needed)
 * ``plot_weight_distributions()``    — weight histograms by sub-network
 * ``plot_weight_matrix_3d(name)``    — 3-D surface of any weight matrix
 
-Dynamic (needs a ``MarketDataLoader`` on ``data2``)
+Dynamic (needs a ``MarketDataLoader`` on ``data``)
 ---------------------------------------------------
 * ``simulate(date)``                 — latent + short-rate Monte-Carlo paths
 * ``plot_short_rate_fan(date)``      — short-rate fan chart (percentiles)
@@ -240,7 +240,7 @@ class TrialAnalyzer:
         ``model_info.json``.
     dataloader : MarketDataLoader, optional
         Needed only for the dynamic (data-driven) analyses. Build it on the
-        same ``data2`` and date range used for training, ideally on CPU.
+        same ``data`` and date range used for training, ideally on CPU.
     device : str
         Device for the reloaded model. Defaults to ``"cpu"``.
     bondnet_activation, bondnet_output_positive :
@@ -1055,7 +1055,7 @@ def _build_cli():
     ap = argparse.ArgumentParser(description="Analyze a grid-search trial folder.")
     ap.add_argument("trial_dir", help="Path to a trial_XXX/ folder.")
     ap.add_argument("--data-path", default=None,
-                    help="data2 path; enables the dynamic (data-driven) analyses.")
+                    help="data path; enables the dynamic (data-driven) analyses.")
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--n-paths", type=int, default=None)
     ap.add_argument("--sample-date", default=None)

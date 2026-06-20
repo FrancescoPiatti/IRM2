@@ -423,7 +423,7 @@ def _build_joint_trainer(tmp_path, *, lw_yield=1.0, lw_sr=1.0, lw_fut=1.0, seed=
     torch.manual_seed(seed)
 
     dl = MarketDataLoader(DataLoaderCfg(
-        data_path="data2",
+        data_path="data",
         start_date=datetime(2021, 1, 1), end_date=datetime(2021, 6, 30),
         max_maturity=3,
         enable_yield=True, enable_short_rate=True, enable_futures=True,
@@ -535,7 +535,7 @@ def test_optuna_gridsearch_runs_and_returns_results(tmp_path):
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     dl = MarketDataLoader(DataLoaderCfg(
-        data_path="data2",
+        data_path="data",
         start_date=datetime(2021, 1, 1), end_date=datetime(2021, 6, 30),
         max_maturity=3,
     ))
@@ -588,7 +588,7 @@ def test_trainer_window_forward_works_with_both_solvers(solver, tmp_path):
 
     torch.manual_seed(0)
     dl = MarketDataLoader(DataLoaderCfg(
-        data_path="data2",
+        data_path="data",
         start_date=datetime(2021, 1, 1), end_date=datetime(2021, 6, 30),
         max_maturity=5, enable_yield=True, enable_short_rate=True, enable_futures=True,
     ))

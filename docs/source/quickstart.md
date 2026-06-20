@@ -16,7 +16,7 @@ from src.training.trainer import Trainer
 
 # 1. Data
 data_cfg = DataLoaderCfg(
-    data_path="data2",
+    data_path="data",
     start_date=datetime(2021, 1, 1),
     end_date=datetime(2022, 12, 31),
     max_maturity=5,

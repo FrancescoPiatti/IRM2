@@ -1,5 +1,0 @@
-2026-06-05 18:42:58,529 - nan_stress.20260605_1842 - INFO - Trainer initialized on device=cpu use_amp=False
-2026-06-05 18:43:00,683 - nan_stress.20260605_1842 - WARNING - Skipping NaN/Inf loss at date=2021-08-16 00:00:00
-2026-06-05 18:43:00,687 - nan_stress.20260605_1842 - WARNING - Skipping NaN/Inf loss at date=2021-08-17 00:00:00
-2026-06-05 18:43:00,690 - nan_stress.20260605_1842 - WARNING - Skipping NaN/Inf loss at date=2021-08-18 00:00:00
-2026-06-05 18:43:00,694 - nan_stress.20260605_1842 - WARNING - Skipping NaN/Inf loss at date=2021-08-19 00:00:00

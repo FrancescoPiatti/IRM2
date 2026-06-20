@@ -1,5 +1,0 @@
-2026-06-05 18:43:33,029 - trace.20260605_1843 - INFO - Trainer initialized on device=cpu use_amp=False
-2026-06-05 18:43:35,060 - trace.20260605_1843 - WARNING - Skipping NaN/Inf loss at date=2021-08-16 00:00:00
-2026-06-05 18:43:35,064 - trace.20260605_1843 - WARNING - Skipping NaN/Inf loss at date=2021-08-17 00:00:00
-2026-06-05 18:43:35,066 - trace.20260605_1843 - WARNING - Skipping NaN/Inf loss at date=2021-08-18 00:00:00
-2026-06-05 18:43:35,069 - trace.20260605_1843 - WARNING - Skipping NaN/Inf loss at date=2021-08-19 00:00:00

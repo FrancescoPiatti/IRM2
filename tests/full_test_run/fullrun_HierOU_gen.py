@@ -26,7 +26,7 @@ def main() -> None:
     start = datetime(2020, 1, 1)
     end = datetime(2020, 2, 28)
 
-    data_path = "data2"
+    data_path = "data"
     if not os.path.exists(data_path):
         raise FileNotFoundError(f"Yield curve csv not found: {data_path}")
 

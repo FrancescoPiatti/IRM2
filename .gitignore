@@ -1,26 +1,18 @@
-/.DS_Store
-/.pytest_cache
-/CLAUDE.md
-/future_pricing_plan.md
-/gridsearch_hparams.md
-/optimization_plan.md
-/optimization_report.md
-/review_notes.md
+# OS / tooling
+.DS_Store
+.pytest_cache/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Project virtualenv (symlink)
 /irm
 
+# Local docs / notebooks / reports attic — not version-controlled
+/files/
 
-markdowns/
-results/
-GridSearch_YCFut_tier1_2/
-GridSearch_YCFut_tier1_3/
-GridSearch_YCFut_tier1_4/
+# Run artifacts (grid searches, single-model runs, checkpoints)
+/results/
 
-src/__pycache__/
-src/dataloader/__pycache__/
-src/configs/__pycache__/*
-src/models/__pycache__/
-src/nn/__pycache__/
-src/training/__pycache__/
-src/types/__pycache__/
-src/utils/__pycache__/
-src/finance/__pycache__/
+.gitignore

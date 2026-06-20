@@ -2,7 +2,7 @@
 
 End-to-end smoke runs that exercise the **full training loop**, the
 **Optuna grid search**, and the **result analyser** against the bundled
-`data2/` corpus.
+`data/` corpus.
 
 These are **not** picked up by the default pytest collection — the file
 names don't match `test_*.py`, so `pytest tests/` ignores this folder.

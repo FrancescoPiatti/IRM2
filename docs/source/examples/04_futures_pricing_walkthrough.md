@@ -5,7 +5,7 @@ demystify the cheapest-to-deliver Monte Carlo: every tensor shape is shown.
 
 We will:
 
-1. fetch a real snapshot from `data2/`,
+1. fetch a real snapshot from `data/`,
 2. simulate latent paths from a freshly-initialised model,
 3. call `Pricer.price_futures` and verify shapes,
 4. cross-check the CTD reduction with a manual `min`.
@@ -26,7 +26,7 @@ from src.finance.pricer_v2 import Pricer, to_year_fraction
 torch.manual_seed(0)
 
 dl = MarketDataLoader(DataLoaderCfg(
-    data_path="data2",
+    data_path="data",
     start_date=datetime(2021, 1, 1),
     end_date=datetime(2022, 12, 31),
     max_maturity=15,

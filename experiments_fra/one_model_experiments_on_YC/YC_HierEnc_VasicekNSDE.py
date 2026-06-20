@@ -26,7 +26,7 @@ def main() -> None:
     latent_dim = 64
     epochs = 70
 
-    data_path = "data2"
+    data_path = "data"
     if not os.path.exists(data_path):
         raise FileNotFoundError(f"Data path not found: {data_path}")
     data_cfg = DataLoaderCfg(

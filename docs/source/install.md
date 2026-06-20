@@ -34,7 +34,7 @@ data loader, type contracts, configs, neural backbones, BondNet, the pricer
 
 ```
 IRM2/
-├── data2/                   CSV market data
+├── data/                   CSV market data
 ├── docs/                    this Sphinx documentation
 ├── experiments_fra/         end-to-end training scripts (expensive)
 ├── src/                     library code

@@ -28,7 +28,7 @@ end   = datetime(2022, 9, 30)
 max_maturity = 10
 
 dl_cfg = DataLoaderCfg(
-    data_path="data2",
+    data_path="data",
     start_date=start - timedelta(days=60),     # include encoder lookback
     end_date=end   + timedelta(days=30),
     max_maturity=max_maturity,

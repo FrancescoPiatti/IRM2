@@ -20,10 +20,10 @@ if str(REPO_ROOT) not in sys.path:
 
 @pytest.fixture(scope="session")
 def data_path() -> str:
-    """Path to the bundled CSV data directory (`data2/`)."""
-    p = REPO_ROOT / "data2"
+    """Path to the bundled CSV data directory (`data/`)."""
+    p = REPO_ROOT / "data"
     if not p.exists():
-        pytest.skip(f"data2 directory not found at {p}")
+        pytest.skip(f"data directory not found at {p}")
     return str(p)
 
 
